@@ -150,7 +150,7 @@ export default function Nav({ children }) {
               <button
                 key={item.label}
                 onClick={() => handleNavClick(item)}
-                className={`flex items-center w-full px-4 py-2.5 rounded-xl text-left transition-all duration-300 group ${
+                className={`flex items-center w-full px-4 py-2.5 rounded-xl text-left transition-all duration-300 group cursor-pointer ${
                   router.pathname.startsWith(item.href) || activeParent === item.label
                     ? "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 font-semibold ring-1 ring-blue-100"
                     : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
@@ -166,7 +166,7 @@ export default function Nav({ children }) {
         </div>
 
         {/* Sub Nav */}
-        <div className={`transition-all duration-300 bg-gradient-to-b from-blue-50 to-white border-r border-gray-100 shadow-inner pt-6 overflow-hidden text-sm font-medium ${activeParent ? "w-64" : "w-0"}`}>
+        <div className={`transition-all duration-300 bg-gradient-to-b from-blue-50 to-white border-r border-gray-100 shadow-inner pt-6 overflow-hidden text-sm font-medium cursor-pointer ${activeParent ? "w-64" : "w-0"}`}>
           {activeParent && (
             <>
               <p className="text-xs uppercase text-blue-500 mb-3 tracking-wide">{activeParent}</p>
