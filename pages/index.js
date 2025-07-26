@@ -1,4 +1,4 @@
-import Layout from "@/components/Nav";
+import Layout from "@/components/Layout";
 import { useState } from "react";
 import {
   BarChart2,

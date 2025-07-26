@@ -8,8 +8,8 @@ import {
   FaWrench,
   FaTools,
   FaTasks,
-  FaChevronDown,
-  FaChevronRight,
+  FaBars,
+  FaTimes,
 } from "react-icons/fa";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -113,108 +113,104 @@ const navStructure = [
 
 export default function Nav({ children }) {
   const router = useRouter();
-  const isActive = (href) => router.pathname.startsWith(href);
-  const [openMenus, setOpenMenus] = useState({});
-
   const [activeParent, setActiveParent] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-const handleNavClick = (item) => {
-  if (item.children) {
-    setActiveParent(item.label === activeParent ? null : item.label);
-  } else {
-    router.push(item.href);
-    setActiveParent(null);
-  }
-};
-
-
-  const toggleMenu = (label) => {
-    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
+  const handleNavClick = (item) => {
+    if (item.children) {
+      setActiveParent(item.label === activeParent ? null : item.label);
+    } else {
+      router.push(item.href);
+      setActiveParent(null);
+      setMobileOpen(false); // Close on mobile
+    }
   };
 
   return (
-    
     <div className="flex min-h-screen bg-gradient-to-br from-[#f1f5f9] to-[#ffffff] text-gray-800 font-[Inter,sans-serif]">
       {/* Sidebar */}
-    <aside className="flex fixed top-0 left-0 h-full z-30 font-[Inter,sans-serif]">
-  {/* Left Sidebar - Main Nav */}
-  <div className="w-60 bg-white/95 backdrop-blur-md shadow-2xl border-r border-gray-200 overflow-y-auto">
-    <div className="p-6 border-b border-gray-100">
-     <div className="flex items-center">
-       <Image
-        src="/images/Logo.png"
-        alt="Logo"
-        width={50}
-        height={50}
-        className="mb-4"
-      />
-      <h1 className="text-3xl font-black text-blue-700 tracking-tight leading-tight">
-  pal
-</h1>
-     </div>
-
-      <p className="text-xs text-gray-400 mt-1 tracking-wide uppercase">Project Manager</p>
-    </div>
-    <nav className="p-4 text-sm font-medium space-y-3">
-      {navStructure.map((item) => (
-        <button
-          key={item.label}
-          onClick={() => handleNavClick(item)}
-          className={`flex items-center w-full px-4 py-2.5 rounded-xl text-left transition-all duration-300 group ${
-            router.pathname.startsWith(item.href) || activeParent === item.label
-              ? "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 font-semibold ring-1 ring-blue-100"
-              : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-          }`}
-        >
-          <span className="text-lg mr-3 group-hover:scale-110 group-hover:text-blue-600 transition-transform duration-200">
-            {item.icon}
-          </span>
-          <span className="text-[15px]">{item.label}</span>
-        </button>
-      ))}
-    </nav>
-  </div>
-
-  {/* Sub Sidebar - Children */}
-  <div
-    className={`transition-all duration-300 ${
-      activeParent ? "w-64 opacity-100" : "w-0 opacity-0 pointer-events-none"
-    } bg-gradient-to-b from-blue-50 to-white border-r border-gray-100 shadow-inner pt-6 px-4 overflow-hidden text-sm font-medium`}
-  >
-    {activeParent && (
-      <>
-        <p className="text-xs uppercase text-blue-500 mb-3 tracking-wide">
-          {activeParent}
-        </p>
-        <ul className="space-y-2">
-          {navStructure
-            .find((item) => item.label === activeParent)
-            ?.children.map((child) => (
-              <li key={child.href}>
-                <Link
-                  href={child.href}
-                  className={`block px-3 py-2 rounded-lg transition-all duration-200 ${
-                    router.pathname.startsWith(child.href)
-                      ? "bg-white text-blue-700 font-semibold ring-1 ring-inset ring-blue-100"
-                      : "text-gray-600 hover:bg-blue-100 hover:text-blue-700"
-                  }`}
-                >
-                  {child.label}
-                </Link>
-              </li>
+      <aside className={`fixed top-0 left-0 h-full z-40 flex transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+        {/* Main Nav */}
+        <div className="w-60 bg-white/95 backdrop-blur-md shadow-2xl border-r border-gray-200 overflow-y-auto">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center mb-2">
+              <Image
+                src="/images/Logo.png"
+                alt="Logo"
+                width={50}
+                height={50}
+                
+              />
+              <h1 className="text-3xl font-black text-blue-700 leading-tight tracking-tight ml-1">pal</h1>
+            </div>
+            <p className="text-xs text-gray-400 mt-1 tracking-wide uppercase">Project Manager</p>
+          </div>
+          <nav className="p-4 text-sm font-medium space-y-3">
+            {navStructure.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => handleNavClick(item)}
+                className={`flex items-center w-full px-4 py-2.5 rounded-xl text-left transition-all duration-300 group ${
+                  router.pathname.startsWith(item.href) || activeParent === item.label
+                    ? "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 font-semibold ring-1 ring-blue-100"
+                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                }`}
+              >
+                <span className="text-lg mr-3 group-hover:scale-110 group-hover:text-blue-600 transition-transform duration-200">
+                  {item.icon}
+                </span>
+                <span className="text-[15px]">{item.label}</span>
+              </button>
             ))}
-        </ul>
-      </>
-    )}
-  </div>
-</aside>
+          </nav>
+        </div>
 
+        {/* Sub Nav */}
+        <div className={`transition-all duration-300 bg-gradient-to-b from-blue-50 to-white border-r border-gray-100 shadow-inner pt-6 overflow-hidden text-sm font-medium ${activeParent ? "w-64" : "w-0"}`}>
+          {activeParent && (
+            <>
+              <p className="text-xs uppercase text-blue-500 mb-3 tracking-wide">{activeParent}</p>
+              <ul className="space-y-2">
+                {navStructure.find((item) => item.label === activeParent)?.children.map((child) => (
+                  <li key={child.href}>
+                    <Link
+                      href={child.href}
+                      className={`block px-3 py-2 rounded-lg transition-all duration-200 ${
+                        router.pathname.startsWith(child.href)
+                          ? "bg-white text-blue-700 font-semibold ring-1 ring-inset ring-blue-100"
+                          : "text-gray-600 hover:bg-blue-100 hover:text-blue-700"
+                      }`}
+                      onClick={() => setMobileOpen(false)} // Close on mobile
+                    >
+                      {child.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </aside>
+
+      {/* Overlay for mobile */}
+     {mobileOpen && (
+  <div
+    className="fixed inset-0 backdrop-blur-sm z-30 md:hidden"
+    onClick={() => setMobileOpen(false)}
+  />
+)}
 
 
       {/* Main Content */}
-      <div className="flex-1 ml-60 flex flex-col">
+      <div className="flex-1 md:ml-[15rem] flex flex-col">
         {/* Top Bar */}
         <header className="flex items-center justify-between bg-white h-16 px-6 border-b border-gray-200 shadow sticky top-0 z-10">
+          {/* Mobile Toggle */}
+          <div className="md:hidden mr-4">
+            <button onClick={() => setMobileOpen(!mobileOpen)}>
+              {mobileOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+            </button>
+          </div>
           <div className="flex-1 max-w-sm">
             <input
               type="text"
@@ -232,9 +228,10 @@ const handleNavClick = (item) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 bg-[#f9fafb]">{children}</main>
+  <main className="flex-1 p-6 overflow-auto bg-[#f9fafb]">
+    {children}
+  </main>
       </div>
     </div>
-    
   );
 }
