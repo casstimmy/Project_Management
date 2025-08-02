@@ -13,8 +13,15 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { jwtDecode } from "jwt-decode";
+
+
+
+
+
+
 
 const navStructure = [
   {
@@ -111,10 +118,38 @@ const navStructure = [
   },
 ];
 
+
+
+
+
+
 export default function Nav({ children }) {
   const router = useRouter();
   const [activeParent, setActiveParent] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+
+
+  useEffect(() => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+ const decoded = jwtDecode(token);
+  console.log("Decoded Token:", decoded);
+
+        setUser(decoded);
+      } catch (err) {
+        console.error("Token decode error:", err);
+        setUser(null);
+      }
+    }
+  }
+ 
+
+}, []);
+
 
   const handleNavClick = (item) => {
     if (item.children) {
@@ -122,7 +157,7 @@ export default function Nav({ children }) {
     } else {
       router.push(item.href);
       setActiveParent(null);
-      setMobileOpen(false); // Close on mobile
+      setMobileOpen(false);
     }
   };
 
@@ -151,7 +186,10 @@ export default function Nav({ children }) {
                 key={item.label}
                 onClick={() => handleNavClick(item)}
                 className={`flex items-center w-full px-4 py-2.5 rounded-xl text-left transition-all duration-300 group cursor-pointer ${
-                  router.pathname.startsWith(item.href) || activeParent === item.label
+                 item.children?.some((child) => router.pathname.startsWith(child.href)) ||
+router.pathname === item.href ||
+activeParent === item.label
+
                     ? "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 font-semibold ring-1 ring-blue-100"
                     : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                 }`}
@@ -175,8 +213,8 @@ export default function Nav({ children }) {
                   <li key={child.href}>
                     <Link
                       href={child.href}
-                      className={`block px-3 py-2 rounded-lg transition-all duration-200 ${
-                        router.pathname.startsWith(child.href)
+                     className={`block px-3 py-2 rounded-lg transition-all duration-200 ${
+  router.pathname === child.href
                           ? "bg-white text-blue-700 font-semibold ring-1 ring-inset ring-blue-100"
                           : "text-gray-600 hover:bg-blue-100 hover:text-blue-700"
                       }`}
@@ -204,28 +242,50 @@ export default function Nav({ children }) {
       {/* Main Content */}
       <div className="flex-1 md:ml-[15rem] flex flex-col">
         {/* Top Bar */}
-        <header className="flex items-center justify-between bg-white h-16 px-6 border-b border-gray-200 shadow sticky top-0 z-10">
-          {/* Mobile Toggle */}
-          <div className="md:hidden mr-4">
-            <button onClick={() => setMobileOpen(!mobileOpen)}>
-              {mobileOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
-            </button>
-          </div>
-          <div className="flex-1 max-w-sm">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full px-4 py-2.5 text-sm border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-            />
-          </div>
-          <div className="flex items-center gap-6">
-            <FaBell className="text-xl text-gray-500 cursor-pointer hover:text-blue-600 transition" />
-            <div className="flex items-center gap-2">
-              <FaUserCircle className="text-2xl text-blue-600" />
-              <span className="text-sm font-semibold">Admin</span>
-            </div>
-          </div>
-        </header>
+      <header className="flex items-center justify-between bg-white h-16 px-6 border-b border-gray-200 shadow sticky top-0 z-10">
+  {/* Mobile Toggle */}
+  <div className="md:hidden mr-4">
+    <button onClick={() => setMobileOpen(!mobileOpen)}>
+      {mobileOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+    </button>
+  </div>
+
+  {/* Search */}
+  <div className="flex-1 max-w-sm">
+    <input
+      type="text"
+      placeholder="Search..."
+      className="w-full px-4 py-2.5 text-sm border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+    />
+  </div>
+
+  {/* Right Icons */}
+  <div className="flex items-center gap-6">
+    <FaBell className="text-xl text-gray-500 cursor-pointer hover:text-blue-600 transition" />
+    <div className="flex items-center gap-2">
+  <FaUserCircle className="text-2xl text-blue-600" />
+  <div className="flex flex-col text-sm leading-tight">
+    <span className="font-semibold">
+      {user?.name || "Unknown User"}
+    </span>
+    <span className="text-gray-500 text-xs">
+      {user?.email || "No Email"}
+    </span>
+  </div>
+</div>
+
+    <button
+      onClick={() => {
+        localStorage.removeItem("token");
+        router.push("/");
+      }}
+      className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md transition"
+    >
+      Logout
+    </button>
+  </div>
+</header>
+
 
         {/* Page Content */}
   <main className="flex-1 p-6 overflow-auto bg-[#f9fafb]">

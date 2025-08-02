@@ -4,6 +4,15 @@ html, body {
   height: 100%;
 }
 
+/* styles/globals.css or inside a <style> tag */
+.loader {
+  border-top-color: transparent;
+  border-right-color: white;
+  border-bottom-color: white;
+  border-left-color: white;
+}
+
+
 
 @keyframes fade-in {
   from {
