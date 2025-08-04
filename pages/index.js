@@ -12,7 +12,7 @@ export default function HomeLoginPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) router.replace("/dashboard");
+    if (token) router.replace("/homePage");
   }, []);
 
   return (
@@ -28,7 +28,7 @@ export default function HomeLoginPage() {
           <p className="text-sm text-gray-500 mt-1">
             {isRegistering
               ? "Sign up to join the platform"
-              : "Login to access your dashboard"}
+              : "Login to access your homePage"}
           </p>
         </div>
 

@@ -26,7 +26,7 @@ function LoginForm({ onToggle }) {
       }
 
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      router.push("/");
     } catch {
       setError("Something went wrong");
     }
