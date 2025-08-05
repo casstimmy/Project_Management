@@ -7,12 +7,15 @@ export default function PageLayout({ children }) {
 
   return (
     <Layout>
-      <div className="flex h-screen w-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
-        <main className="">{children}</main>
+      <div className="flex h-[90%] w-full bg-gray-50">
+        {/* Fixed Sidebar */}
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+        {/* Main content with padding-left to offset fixed sidebar */}
+        <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "pl-72" : "pl-0"}`}>
+          <main className="flex-1 overflow-auto">{children}</main>
+        </div>
       </div>
-    </div>
     </Layout>
   );
 }
