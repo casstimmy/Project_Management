@@ -9,8 +9,8 @@ export default function PageLayout({ children }) {
     <Layout>
       <div className="flex h-screen w-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"} md:ml-64`}>
-        <main className="mt-14 ">{children}</main>
+      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
+        <main className="">{children}</main>
       </div>
     </div>
     </Layout>

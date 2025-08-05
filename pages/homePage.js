@@ -1,50 +1,54 @@
-import Layout from "@/components/layout/PageLayout";
+
+import PageLayout from "@/components/layout/PageLayout";
+import { Plus, List, Users } from "lucide-react";
+import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <Layout>
-      <div className="bg-white rounded shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Lists</h2>
-        <table className="min-w-full text-left text-gray-700">
-          <thead>
-            <tr className="border-b">
-              <th className="py-2">Name</th>
-              <th className="py-2">Color</th>
-              <th className="py-2">Progress</th>
-              <th className="py-2">Start</th>
-              <th className="py-2">End</th>
-              <th className="py-2">Priority</th>
-              <th className="py-2">Owner</th>
-            </tr>
-          </thead>
-          <tbody>
-            {["List", "Hetch"].map((list) => (
-              <tr key={list} className="border-b hover:bg-gray-50 transition">
-                <td className="py-2">{list}</td>
-                <td className="py-2">-</td>
-                <td className="py-2 flex items-center gap-2">
-                  <div className="bg-gray-200 w-24 h-2 rounded">
-                    <div className="bg-blue-500 h-2 rounded w-0" />
-                  </div>
-                  0/0
-                </td>
-                <td className="py-2">-</td>
-                <td className="py-2">-</td>
-                <td className="py-2">-</td>
-                <td className="py-2">-</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <PageLayout>
+      <div className="min-h-screen bg-white p-4 space-y-6 md:p-10">
+      {/* Top Welcome Section */}
+      <div className="space-y-2">
+        <h1 className="text-2xl md:text-4xl font-bold text-gray-900">Welcome back, Ayo!</h1>
+        <p className="text-gray-600 text-sm md:text-base">Here's what's happening with your teams today.</p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded shadow p-6 h-60 flex items-center justify-center text-gray-500">
-          Resources – Drop files here to attach
+
+      {/* Spaces Section */}
+      <div className="bg-gray-100 rounded-xl p-4 shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">Your Spaces</h2>
+          <button className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+            <Plus size={16} /> New Space
+          </button>
         </div>
-        <div className="bg-white rounded shadow p-6 h-60 flex items-center justify-center text-gray-500">
-          Workload by Status – No Results
+
+        <div className="space-y-4">
+          {/* Team Space Card */}
+          <div className="bg-white rounded-lg shadow px-4 py-3 border border-gray-200">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Users size={18} className="text-blue-600" />
+              <span className="font-medium">Team Space</span>
+            </div>
+            <div className="ml-6 mt-2 space-y-1">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 hover:underline"
+              >
+                <List size={14} /> List
+              </Link>
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 hover:underline"
+              >
+                <List size={14} /> Hetch
+              </Link>
+            </div>
+          </div>
+
+          {/* Add more space cards here if needed */}
         </div>
       </div>
-    </Layout>
+    </div>
+    </PageLayout>
   );
 }
