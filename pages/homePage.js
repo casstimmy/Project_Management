@@ -44,7 +44,7 @@ export default function HomePage() {
             Good {timeOfDay}, Ayo!
           </h1>
           <p className="text-gray-600 text-sm md:text-base mt-1">
-            Here's your workspace overview.
+            Here&apos;s your workspace overview.
           </p>
         </div>
 
