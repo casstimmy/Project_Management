@@ -117,7 +117,7 @@ export default function Sidebar({ isOpen, onClose }) {
               </p>
               <ul className="ml-2 space-y-1">
                 <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">
-                  All Tasks – Ayoola's Workspace
+                  All Tasks – Ayoola&apos;s Workspace
                 </li>
                 <li className="text-gray-500 italic text-sm ml-2">
                   You can add more workspaces here

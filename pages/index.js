@@ -13,7 +13,7 @@ export default function HomeLoginPage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) router.replace("/homePage");
-  }, []);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-white px-4">
