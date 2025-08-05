@@ -7,7 +7,7 @@ export default function PageLayout({ children }) {
 
   return (
     <Layout>
-      <div className="flex h-[90%] w-full bg-gray-50">
+      <div className="flex h-[92%] w-full bg-gray-50">
         {/* Fixed Sidebar */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
