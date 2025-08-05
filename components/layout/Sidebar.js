@@ -62,7 +62,7 @@ export default function Sidebar({ isOpen, onClose }) {
     },
     {
       name: "Design Hub",
-      projects: ["Brand Kit", "Figma Files"],
+      projects: ["Brand Kit", "My Files"],
     },
   ];
 
