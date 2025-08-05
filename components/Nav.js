@@ -47,7 +47,7 @@ export default function Nav({ children }) {
       <header className="flex items-center justify-between h-16 w-full px-4 bg-white border-b shadow-sm z-50 fixed top-0 left-0 right-0">
         {/* Logo + App Name */}
         <div className="flex flex-col justify-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Image src="/images/Logo.png" alt="Logo" width={30} height={30} />
             <span className="text-xl font-bold text-blue-700 tracking-tight">
               Pal
