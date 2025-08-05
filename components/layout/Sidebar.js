@@ -44,30 +44,29 @@ export default function Sidebar({ isOpen, onClose }) {
     setActiveSpace("");
   };
 
- const navLink = (href, label, Icon, extraClass = "") => {
-  const isActive =
-    router.pathname === href || router.pathname.startsWith(href);
+  const navLink = (href, label, Icon, extraClass = "") => {
+    const isActive =
+      router.pathname === href || router.pathname.startsWith(href);
 
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-3 p-2 rounded-lg text-sm transition group ${extraClass} ${
-        isActive
-          ? "bg-indigo-100 text-indigo-700 font-medium"
-          : "hover:bg-gray-100 text-gray-700"
-      }`}
-    >
-      <Icon
-        size={18}
-        className={`group-hover:text-indigo-500 ${
-          isActive ? "text-indigo-500" : "text-gray-500"
+    return (
+      <Link
+        href={href}
+        className={`flex items-center gap-3 p-2 rounded-lg text-sm transition group ${extraClass} ${
+          isActive
+            ? "bg-indigo-100 text-indigo-700 font-medium"
+            : "hover:bg-gray-100 text-gray-700"
         }`}
-      />
-      {!isCollapsed && <span>{label}</span>}
-    </Link>
-  );
-};
-
+      >
+        <Icon
+          size={18}
+          className={`group-hover:text-indigo-500 ${
+            isActive ? "text-indigo-500" : "text-gray-500"
+          }`}
+        />
+        {!isCollapsed && <span>{label}</span>}
+      </Link>
+    );
+  };
 
   const spaces = [
     {
@@ -91,7 +90,7 @@ export default function Sidebar({ isOpen, onClose }) {
       />
 
       <aside
-        className={`fixed top-0 left-0 z-50 ${
+        className={`mr-3 fixed top-0 left-0 z-50 ${
           isCollapsed ? "w-20" : "w-72"
         } bg-gray-200 backdrop-blur-xl border-r border-l border-gray-300 rounded-lg h-full shadow-xl flex flex-col transition-all duration-300 md:translate-x-0 md:static ${
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -99,9 +98,11 @@ export default function Sidebar({ isOpen, onClose }) {
       >
         <div className="flex flex-col h-full relative">
           {/* Always-visible Collapse Button */}
-          <div className={`absolute top-4  z-50 ${
-          isCollapsed ? "right-7" : "right-4"
-        } `}>
+          <div
+            className={`absolute top-4  z-50 ${
+              isCollapsed ? "right-7" : "right-4"
+            } `}
+          >
             <button
               onClick={() => setIsCollapsed((prev) => !prev)}
               className="inline-flex items-center justify-center p-1.5 text-gray-700 hover:scale-105 transition"
@@ -114,7 +115,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <div className="flex flex-col h-full">
             {/* Header */}
             {!isCollapsed && (
-              <div className="flex items-center justify-between px-4 py-4 border-b border-gray-400">
+              <div className="flex items-center justify-between px-4 py-4">
                 <h2 className="text-xl font-bold text-gray-800">Home</h2>
                 <div className="flex items-center mr-10 gap-2">
                   <button className="hidden md:inline-flex items-center justify-center p-1.5 bg-indigo-600 text-white rounded hover:scale-105 transition">
@@ -136,8 +137,8 @@ export default function Sidebar({ isOpen, onClose }) {
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-6 text-sm">
               {/* Primary Links */}
-          <div className="space-y-1">
-  {navLink("/inbox", "Inbox", Inbox, isCollapsed ? "mt-9" : "")}
+              <div className="space-y-1">
+                {navLink("/inbox", "Inbox", Inbox, isCollapsed ? "mt-9" : "")}
 
                 {/* My Tasks Section */}
                 <div>
@@ -187,8 +188,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
                 {expandedSpaces.__main__ && (
                   <div className="ml-2 mt-2 space-y-2">
-                    <button
-                      onClick={() => openModal("My Workspace")}
+                    <Link
+                      href="/projects/project"
                       className="flex items-center gap-3 px-4 py-2 mt-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors rounded-md w-full shadow-sm"
                     >
                       <span className="bg-white p-2 rounded-md shadow">
@@ -199,7 +200,7 @@ export default function Sidebar({ isOpen, onClose }) {
                           All Tasks – Ayoola&apos;s Workspace
                         </span>
                       )}
-                    </button>
+                    </Link>
 
                     {/* Dynamic Spaces */}
                     {spaces.map((space) => (
@@ -213,15 +214,9 @@ export default function Sidebar({ isOpen, onClose }) {
                             {!isCollapsed && space.name}
                           </div>
                           {expandedSpaces[space.name] ? (
-                            <ChevronDown
-                              size={16}
-                              className="text-gray-400"
-                            />
+                            <ChevronDown size={16} className="text-gray-400" />
                           ) : (
-                            <ChevronRight
-                              size={16}
-                              className="text-gray-400"
-                            />
+                            <ChevronRight size={16} className="text-gray-400" />
                           )}
                         </button>
 

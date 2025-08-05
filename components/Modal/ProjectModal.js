@@ -1,7 +1,22 @@
 // components/Modal/ProjectModal.js
-import { X } from "lucide-react";
+import { useState } from "react";
+import { X, PlusCircle } from "lucide-react";
 
 export default function ProjectModal({ closeModal, activeSpace }) {
+  const [objectives, setObjectives] = useState([""]);
+  const [stakeholders, setStakeholders] = useState([
+    { name: "", role: "", contact: "" },
+  ]);
+  const [responsibilities, setResponsibilities] = useState([
+    { role: "", responsibility: "" },
+  ]);
+
+  const addObjective = () => setObjectives([...objectives, ""]);
+  const addStakeholder = () =>
+    setStakeholders([...stakeholders, { name: "", role: "", contact: "" }]);
+  const addResponsibility = () =>
+    setResponsibilities([...responsibilities, { role: "", responsibility: "" }]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 py-8">
       <div className="bg-white rounded-xl w-full max-w-3xl shadow-2xl relative overflow-y-auto max-h-[90vh]">
@@ -24,7 +39,7 @@ export default function ProjectModal({ closeModal, activeSpace }) {
             }}
             className="space-y-6"
           >
-            {/* 1. Project Title */}
+            {/* Project Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Project Title
@@ -37,7 +52,7 @@ export default function ProjectModal({ closeModal, activeSpace }) {
               />
             </div>
 
-            {/* 2. Purpose & Justification */}
+            {/* Purpose & Justification */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Project Purpose & Justification
@@ -49,24 +64,31 @@ export default function ProjectModal({ closeModal, activeSpace }) {
               ></textarea>
             </div>
 
-            {/* 3. Project Objectives */}
+            {/* Project Objectives */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Project Objectives
               </label>
               <div className="space-y-2">
-                {[1, 2, 3].map((n) => (
+                {objectives.map((objective, idx) => (
                   <input
-                    key={n}
+                    key={idx}
                     type="text"
                     className="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-indigo-500"
-                    placeholder={`Objective ${n}`}
+                    placeholder={`Objective ${idx + 1}`}
                   />
                 ))}
+                <button
+                  type="button"
+                  onClick={addObjective}
+                  className="text-indigo-600 text-sm font-medium flex items-center gap-1"
+                >
+                  <PlusCircle size={16} /> Add Objective
+                </button>
               </div>
             </div>
 
-            {/* 4. Project Scope */}
+            {/* Project Scope */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Project Scope
@@ -78,14 +100,14 @@ export default function ProjectModal({ closeModal, activeSpace }) {
               ></textarea>
             </div>
 
-            {/* 5. Key Stakeholders */}
+            {/* Key Stakeholders */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Key Stakeholders
               </label>
-              {[1, 2, 3].map((n) => (
+              {stakeholders.map((_, idx) => (
                 <div
-                  key={n}
+                  key={idx}
                   className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2"
                 >
                   <input
@@ -105,26 +127,44 @@ export default function ProjectModal({ closeModal, activeSpace }) {
                   />
                 </div>
               ))}
+              <button
+                type="button"
+                onClick={addStakeholder}
+                className="text-indigo-600 text-sm font-medium flex items-center gap-1"
+              >
+                <PlusCircle size={16} /> Add Stakeholder
+              </button>
             </div>
 
-            {/* 6. Roles & Responsibilities */}
+            {/* Roles & Responsibilities */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Roles & Responsibilities
               </label>
-              {["Project Manager", "Facility Manager", "Contractor", "Finance"].map((role) => (
-                <div key={role} className="mb-2">
-                  <label className="text-sm font-semibold">{role}</label>
+              {responsibilities.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                   <input
                     type="text"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
-                    placeholder={`Responsibility of ${role}`}
+                    className="border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Role (e.g. Contractor)"
+                  />
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Responsibility"
                   />
                 </div>
               ))}
+              <button
+                type="button"
+                onClick={addResponsibility}
+                className="text-indigo-600 text-sm font-medium flex items-center gap-1"
+              >
+                <PlusCircle size={16} /> Add Responsibility
+              </button>
             </div>
 
-            {/* 8. Budget Summary */}
+            {/* Budget Summary */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Budget Summary
@@ -141,7 +181,7 @@ export default function ProjectModal({ closeModal, activeSpace }) {
               ))}
             </div>
 
-            {/* 9. Risks & Assumptions */}
+            {/* Risks & Assumptions */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Risks & Assumptions
@@ -158,7 +198,7 @@ export default function ProjectModal({ closeModal, activeSpace }) {
               ></textarea>
             </div>
 
-            {/* 10. Approval Signatures */}
+            {/* Approval Signatures */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Approval Signatures
