@@ -1,10 +1,4 @@
-import {
-  FaBell,
-  FaHome,
-  FaUserCircle,
-  FaBars,
-  FaTimes,
-} from "react-icons/fa";
+import { FaBell, FaHome, FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
@@ -23,6 +17,7 @@ export default function Nav({ children }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [loadingRoute, setLoadingRoute] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -37,6 +32,7 @@ export default function Nav({ children }) {
   }, []);
 
   const navigate = (href) => {
+    setLoadingRoute(href);
     setMobileOpen(false);
     router.push(href);
   };
@@ -86,7 +82,11 @@ export default function Nav({ children }) {
           {/* Mobile Menu Toggle */}
           <div className="md:hidden ml-4">
             <button onClick={() => setMobileOpen(!mobileOpen)}>
-              {mobileOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+              {mobileOpen ? (
+                <FaTimes className="text-xl" />
+              ) : (
+                <FaBars className="text-xl" />
+              )}
             </button>
           </div>
         </div>
@@ -102,15 +102,24 @@ export default function Nav({ children }) {
         >
           {navItems.map((item) => {
             const isActive = router.pathname === item.href;
+            const isLoading = loadingRoute === item.href;
 
             return (
               <div key={item.href} title={item.label}>
                 <button
                   onClick={() => navigate(item.href)}
                   className={`text-xl p-3 rounded-md transition flex items-center justify-center
-                    ${isActive ? "text-blue-600 bg-blue-100" : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"}`}
+          ${
+            isActive
+              ? "text-blue-600 bg-blue-100"
+              : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+          }`}
                 >
-                  {item.icon}
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent animate-spin rounded-full" />
+                  ) : (
+                    item.icon
+                  )}
                 </button>
               </div>
             );

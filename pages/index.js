@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { LockKeyhole } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import LoginForm from "@/components/auth/LoginForm";
-import SignUpForm from "@/components/auth/SignUpForm";
+import LoginForm from "@/components/Auth/LoginForm";
+import SignUpForm from "@/components/Auth/SignUpForm";
 
 export default function HomeLoginPage() {
   const router = useRouter();

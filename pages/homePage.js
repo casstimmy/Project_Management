@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import PageLayout from "@/components/layout/PageLayout";
+import PageLayout from "@/components/MainLayout/PageLayout";
 import {
   ClipboardList,
   UserCheck,
