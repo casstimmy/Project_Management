@@ -162,7 +162,7 @@ const handleAddTask = async (newTask) => {
           <EquipmentChecklist equipment={project.equipment || []} />
         )}
 
-        {activeView === "gantt" && <GanttChart tasks={project.tasks || []} />}
+       {activeView === "gantt" && <GanttChart project={project} />}
 
         {activeView === "budget" && (
           <BudgetVsActual data={project.budgetData || []} />

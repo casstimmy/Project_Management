@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 
 export default function TaskDetailModal({ task, onClose, onSave }) {
- if (!task) return null;  // ⬅️ guard against undefined task
+ if (!task) return null;
 
   const [comments, setComments] = useState(task.comments || []);
   const [newComment, setNewComment] = useState("");
