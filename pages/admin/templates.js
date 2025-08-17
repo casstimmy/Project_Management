@@ -1,6 +1,6 @@
 import { FaClipboardList } from "react-icons/fa";
 import { Loader2 } from "lucide-react";
-import Layout from "@/components/Layout";
+import Layout from "@/components/MainLayout/Layout";
 
 export default function TemplateManagement() {
   return (

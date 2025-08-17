@@ -1,6 +1,6 @@
 // pages/tasks/today-overdue.js
 import { useEffect, useState } from "react";
-import PageLayout from "@/components/MainLayout/PageLayout";
+import Layout from "@/components/MainLayout/Layout";
 
 export default function TodayOverdueTasks() {
   const [tasks, setTasks] = useState([]);
@@ -43,7 +43,7 @@ export default function TodayOverdueTasks() {
 
 
   return (
-    <PageLayout>
+    <Layout>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">Today & Overdue Tasks</h1>
         {loading ? (
@@ -62,6 +62,6 @@ export default function TodayOverdueTasks() {
           </ul>
         )}
       </div>
-    </PageLayout>
+    </Layout>
   );
 }

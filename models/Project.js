@@ -20,6 +20,7 @@ const projectSchema = new Schema(
     purpose: String,
     objectives: [objectiveSchema],
     scope: String,
+    tasks: [{ type: Schema.Types.ObjectId, ref: "Task" }],
     stakeholders: [stakeholderSchema],
     responsibilities: [responsibilitySchema],
     budget: [budgetSchema],

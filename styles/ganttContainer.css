@@ -1,0 +1,22 @@
+.gantt-container {
+  border-radius: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  padding: 1rem;
+  background-color: #ffffff;
+}
+
+/* Optional: adjust text and tooltip styles */
+.gantt-container .bar {
+  font-size: 0.75rem;
+  color: white;
+}
+
+.gantt-container .bar-progress {
+  opacity: 0.9;
+}
+
+.gantt-container .gantt-label {
+  font-weight: 500;
+  color: #374151; /* gray-700 */
+}

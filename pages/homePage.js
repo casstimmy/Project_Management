@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import PageLayout from "@/components/MainLayout/PageLayout";
+import Layout from "@/components/MainLayout/Layout";
 import {
   ClipboardList,
   UserCheck,
@@ -36,7 +36,7 @@ export default function HomePage() {
   ];
 
   return (
-    <PageLayout>
+    <Layout>
       <div className="min-h-screen bg-white p-4 md:p-10">
         {/* Welcome Section */}
         <div className="mb-8">
@@ -77,7 +77,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    </Layout>
   );
 }
 

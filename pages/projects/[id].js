@@ -1,11 +1,16 @@
-// pages/projects/[id].js
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import PageLayout from "@/components/MainLayout/PageLayout";
+import Layout from "@/components/MainLayout/Layout";
 import TaskDetailModal from "@/components/Modal/TaskDetailModal";
+import WorkspaceHeader from "@/components/project/WorkspaceHeader";
+import BoardView from "@/components/project/BoardView";
 
-const statusesOrder = ["todo", "inprogress", "done"];
+import EquipmentChecklist from "@/components/project/EquipmentChecklist";
+import GanttChart from "@/components/project/GanttChart";
+import BudgetVsActual from "@/components/project/BudgetVsActual";
+import WeeklyReport from "@/components/project/WeeklyReport";
+import ListView from "@/components/project/ListView";
+import CalendarView from "@/components/project/CalendarView";
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -15,7 +20,9 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTask, setActiveTask] = useState(null);
   const [newTasks, setNewTasks] = useState({});
+  const [activeView, setActiveView] = useState("board");
 
+  // === Fetch project with tasks
   const fetchProject = async () => {
     try {
       const res = await fetch(`/api/projects/${id}`);
@@ -32,154 +39,138 @@ export default function ProjectDetailPage() {
     if (id) fetchProject();
   }, [id]);
 
-  const onDragEnd = async (result) => {
+  // === Handlers
+  const handleDragEnd = async (result) => {
     if (!result.destination) return;
-    const { source, destination, draggableId } = result;
+    const { draggableId, destination } = result;
 
-    if (source.droppableId === destination.droppableId) return;
+    try {
+      const res = await fetch(`/api/tasks/${draggableId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: destination.droppableId }),
+      });
 
-    const res = await fetch(`/api/tasks/${draggableId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: destination.droppableId }),
-    });
-
-    if (res.ok) fetchProject();
-  };
-
-  const handleNewTaskChange = (statusId, value) => {
-    setNewTasks((prev) => ({ ...prev, [statusId]: value }));
-  };
-
-  const handleAddTask = async (statusId) => {
-    const name = newTasks[statusId];
-    if (!name?.trim()) return;
-
-    const res = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId: id,
-        status: statusId,
-        name,
-      }),
-    });
-
-    if (res.ok) {
-      setNewTasks((prev) => ({ ...prev, [statusId]: "" }));
-      fetchProject();
+      if (res.ok) {
+        await fetchProject();
+      }
+    } catch (err) {
+      console.error("Error moving task:", err);
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
-    const confirmed = confirm("Are you sure you want to delete this task?");
-    if (!confirmed) return;
+  const handleNewTaskChange = (statusId, value) =>
+    setNewTasks((prev) => ({ ...prev, [statusId]: value }));
 
-    const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-    if (res.ok) fetchProject();
+
+  
+
+const handleAddTask = async (newTask) => {
+  try {
+    const res = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...newTask, projectId: project._id }),
+    });
+
+    if (!res.ok) throw new Error("Failed to create task");
+
+    const saved = await res.json();
+    setProject((prev) => ({ ...prev, tasks: [...prev.tasks, saved] }));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
+
+
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        await fetchProject();
+      }
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
   };
 
   const handleUpdateTask = async (taskId, updates) => {
-    const res = await fetch(`/api/tasks/${taskId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    });
-    if (res.ok) fetchProject();
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (res.ok) {
+        await fetchProject();
+        setActiveTask(null);
+      }
+    } catch (err) {
+      console.error("Error updating task:", err);
+    }
   };
 
   if (loading || !project) {
     return (
-      <PageLayout>
+      <Layout>
         <div className="p-6">Loading project...</div>
-      </PageLayout>
+      </Layout>
     );
   }
 
   return (
-    <PageLayout>
+    <Layout>
+      <WorkspaceHeader
+        project={project}
+        activeView={activeView}
+        onChangeView={setActiveView}
+      />
+
       <div className="p-6 space-y-6">
-        <h1 className="text-3xl font-bold">{project.title}</h1>
+        {activeView === "board" && (
+          <BoardView
+            project={project}
+            onDragEnd={handleDragEnd}
+            newTasks={newTasks}
+            onNewTaskChange={handleNewTaskChange}
+            onAddTask={handleAddTask}
+            onDeleteTask={handleDeleteTask}
+            onTaskClick={setActiveTask}
+          />
+        )}
 
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {statusesOrder.map((statusId) => {
-              const col = project.statuses?.find((s) => s.id === statusId);
+      {activeView === "list" && (
+  <ListView
+    project={project}
+    onTaskClick={setActiveTask}
+    onDeleteTask={handleDeleteTask}
+  />
+)}
 
-              return (
-                <div key={statusId} className="bg-gray-50 rounded-lg p-3 border">
-                  <h2 className="font-semibold mb-2">
-                    {col?.label || statusId.toUpperCase()}
-                  </h2>
+        {activeView === "calendar" && (
+          <CalendarView   project={project}/>
+        )}
 
-                  <Droppable droppableId={statusId}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className="min-h-[50px] space-y-2"
-                      >
-                        {col?.tasks?.map((task, index) => (
-                          <Draggable
-                            key={task._id}
-                            draggableId={task._id}
-                            index={index}
-                          >
-                            {(provided) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className="p-3 bg-white rounded shadow text-sm border hover:bg-gray-50"
-                                onClick={() => setActiveTask(task)}
-                              >
-                                <div className="flex justify-between">
-                                  <p className="font-medium">{task.name}</p>
-                                  <button
-                                    className="text-red-500 hover:underline text-xs"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTask(task._id);
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                                <p className="text-xs text-gray-500">
-                                  {task.assignee || "Unassigned"}
-                                </p>
-                                <p className="text-[10px] text-gray-400">
-                                  Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}
-                                </p>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
+        {activeView === "checklist" && (
+          <EquipmentChecklist equipment={project.equipment || []} />
+        )}
 
-                  <div className="mt-2 space-y-1">
-                    <input
-                      type="text"
-                      placeholder="New Task"
-                      value={newTasks[statusId] || ""}
-                      onChange={(e) => handleNewTaskChange(statusId, e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                    />
-                    <button
-                      onClick={() => handleAddTask(statusId)}
-                      className="text-indigo-600 text-xs hover:underline"
-                    >
-                      + Add Task
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </DragDropContext>
+        {activeView === "gantt" && <GanttChart tasks={project.tasks || []} />}
+
+        {activeView === "budget" && (
+          <BudgetVsActual data={project.budgetData || []} />
+        )}
+
+        {activeView === "reports" && (
+          <WeeklyReport reports={project.reports || []} />
+        )}
       </div>
 
       {activeTask && (
@@ -189,6 +180,6 @@ export default function ProjectDetailPage() {
           onSave={handleUpdateTask}
         />
       )}
-    </PageLayout>
+    </Layout>
   );
 }

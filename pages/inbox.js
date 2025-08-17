@@ -1,6 +1,6 @@
 // pages/inbox.js
 import { useEffect, useState } from "react";
-import PageLayout from "@/components/MainLayout/PageLayout";
+import Layout from "@/components/MainLayout/Layout";
 import Link from "next/link";
 import { CheckCircle, MailOpen } from "lucide-react";
 
@@ -61,7 +61,7 @@ export default function InboxPage() {
   };
 
   return (
-    <PageLayout>
+    <Layout>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">Inbox</h1>
 
@@ -109,6 +109,6 @@ export default function InboxPage() {
           </ul>
         )}
       </div>
-    </PageLayout>
+    </Layout>
   );
 }

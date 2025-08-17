@@ -1,6 +1,6 @@
 // pages/tasks/personal-list.js
 import { useEffect, useState } from "react";
-import PageLayout from "@/components/MainLayout/PageLayout";
+import Layout from "@/components/MainLayout/Layout";
 
 export default function PersonalTaskList() {
   const [tasks, setTasks] = useState([]);
@@ -32,7 +32,7 @@ const fetchTasks = async () => {
   }, []);
 
   return (
-    <PageLayout>
+    <Layout>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">My Personal Task List</h1>
         {loading ? (
@@ -50,6 +50,6 @@ const fetchTasks = async () => {
           </ul>
         )}
       </div>
-    </PageLayout>
+    </Layout>
   );
 }

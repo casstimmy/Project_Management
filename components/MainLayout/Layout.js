@@ -1,15 +1,13 @@
-// components/Layout.js
+// components/MainLayout/Layout.js
 import { Inter } from "next/font/google";
-import Nav from "@/components/Nav";
+import Nav from "@/components/MainLayout/Nav";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export default function Layout({ children }) {
   return (
     <div className={`${inter.variable} font-sans`}>
-      <Nav>
-        {children}
-        </Nav>
+      <Nav>{children}</Nav>
     </div>
   );
 }

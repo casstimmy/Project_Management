@@ -1,24 +1,33 @@
 // pages/assigned-to-me.js
 import { useEffect, useState } from "react";
-import PageLayout from "@/components/MainLayout/PageLayout";
+import Layout from "@/components/MainLayout/Layout";
 import Link from "next/link";
 
 export default function AssignedToMe() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
+ useEffect(() => {
+  const fetchTasks = async () => {
+    try {
       const res = await fetch("/api/tasks?assignedTo=me");
       const data = await res.json();
-      setTasks(data);
+
+      // Ensure tasks is an array
+      setTasks(Array.isArray(data) ? data : data.tasks || []);
+    } catch (err) {
+      console.error("Failed to fetch tasks:", err);
+      setTasks([]);
+    } finally {
       setLoading(false);
-    };
-    fetchTasks();
-  }, []);
+    }
+  };
+  fetchTasks();
+}, []);
+
 
   return (
-    <PageLayout>
+    <Layout>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">Tasks Assigned to Me</h1>
         {loading ? (
@@ -38,6 +47,6 @@ export default function AssignedToMe() {
           </ul>
         )}
       </div>
-    </PageLayout>
+    </Layout>
   );
 }
