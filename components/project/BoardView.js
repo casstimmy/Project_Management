@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskModal from "../Modal/AddTaskModal";
 
@@ -15,7 +15,7 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
   const [selectedStatus, setSelectedStatus] = useState("todo");
   const [open, setOpen] = useState(false);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!project?._id) return;
     try {
       const res = await fetch(`/api/tasks?projectId=${project._id}`);
@@ -25,11 +25,11 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
       console.error("Failed to fetch tasks:", err);
       setTasks([]);
     }
-  };
+  }, [project?._id]);
 
   useEffect(() => {
     fetchTasks();
-  }, [project]);
+  }, [fetchTasks]);
 
   const tasksByStatus = useMemo(() => {
     const grouped = {};
@@ -41,8 +41,7 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
 
   const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
-    if (!destination) return;
-    if (source.droppableId === destination.droppableId) return;
+    if (!destination || source.droppableId === destination.droppableId) return;
 
     const task = tasks.find((t) => t._id.toString() === draggableId);
     if (!task) return;
@@ -133,19 +132,14 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={`flex-1 min-h-[250px] p-4 rounded-xl border border-gray-200 shadow-sm transition-all duration-300
-                    ${snapshot.isDraggingOver ? "bg-gradient-to-b from-indigo-50 to-indigo-100" : "bg-gray-50"}
-                  `}
+                    ${snapshot.isDraggingOver ? "bg-gradient-to-b from-indigo-50 to-indigo-100" : "bg-gray-50"}`}
                 >
                   <h3 className="font-bold mb-3 text-gray-700 text-center text-sm md:text-base">
                     {status.toUpperCase()}
                   </h3>
 
                   {tasksByStatus[status].map((task, index) => (
-                    <Draggable
-                      key={task._id}
-                      draggableId={task._id.toString()}
-                      index={index}
-                    >
+                    <Draggable key={task._id} draggableId={task._id.toString()} index={index}>
                       {(prov, snap) => (
                         <div
                           ref={prov.innerRef}
@@ -154,8 +148,7 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
                           className={`mb-3 p-3 rounded-xl border shadow-sm transition-all duration-200 cursor-pointer
                             bg-white hover:shadow-lg hover:scale-[1.02] ${
                               snap.isDragging ? "bg-indigo-50 border-indigo-300 shadow-lg" : ""
-                            }
-                          `}
+                            }`}
                         >
                           <div className="flex justify-between items-start">
                             <span className="font-medium text-gray-800">{task.name}</span>
