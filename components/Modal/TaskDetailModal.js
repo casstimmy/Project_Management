@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 
 export default function TaskDetailModal({ task, onClose, onSave }) {
- if (!task) return null;
+ 
 
   const [comments, setComments] = useState(task.comments || []);
   const [newComment, setNewComment] = useState("");
@@ -10,6 +10,8 @@ export default function TaskDetailModal({ task, onClose, onSave }) {
   const [dueDate, setDueDate] = useState(
     task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : ""
   );
+
+if (!task) return null;
 
 
   const handleAddComment = () => {

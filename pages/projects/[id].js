@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import TaskDetailModal from "@/components/Modal/TaskDetailModal";
 import WorkspaceHeader from "@/components/project/WorkspaceHeader";
@@ -23,17 +23,22 @@ export default function ProjectDetailPage() {
   const [activeView, setActiveView] = useState("board");
 
   // === Fetch project with tasks
-  const fetchProject = async () => {
-    try {
-      const res = await fetch(`/api/projects/${id}`);
-      const data = await res.json();
-      setProject(data);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchProject = useCallback(async () => {
+  if (!id) return;
+  try {
+    const res = await fetch(`/api/projects/${id}`);
+    const data = await res.json();
+    setProject(data);
+  } catch (err) {
+    console.error("Fetch error:", err);
+  } finally {
+    setLoading(false);
+  }
+}, [id]);
+
+useEffect(() => {
+  fetchProject();
+}, [fetchProject]);
 
   useEffect(() => {
     if (id) fetchProject();

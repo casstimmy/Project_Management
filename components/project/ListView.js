@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const statuses = ["todo", "inprogress", "done"];
 const statusColors = {
@@ -12,7 +12,8 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editedTask, setEditedTask] = useState({});
 
-  const fetchTasks = async () => {
+  // ✅ Wrap fetchTasks in useCallback
+  const fetchTasks = useCallback(async () => {
     if (!project?._id) return;
     try {
       const res = await fetch(`/api/tasks?projectId=${project._id}`);
@@ -22,11 +23,12 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
       console.error("Failed to fetch tasks:", err);
       setTasks([]);
     }
-  };
+  }, [project?._id]);
 
+  // ✅ useEffect depends on fetchTasks
   useEffect(() => {
     fetchTasks();
-  }, [project]);
+  }, [fetchTasks]);
 
   const handleChange = (field, value) => {
     setEditedTask((prev) => ({ ...prev, [field]: value }));
@@ -64,9 +66,7 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
 
   return (
     <div className="bg-gray-50 min-h-screen p-6">
-      <h2 className="text-3xl font-bold mb-8 text-gray-800">
-        Tasks List
-      </h2>
+      <h2 className="text-3xl font-bold mb-8 text-gray-800">Tasks List</h2>
 
       {tasks.length === 0 ? (
         <p className="text-gray-500 text-center py-10 text-lg">
@@ -207,7 +207,9 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                         <input
                           type="text"
                           value={editedTask.name}
-                          onChange={(e) => handleChange("name", e.target.value)}
+                          onChange={(e) =>
+                            handleChange("name", e.target.value)
+                          }
                           className="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       ) : (
