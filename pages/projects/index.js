@@ -64,7 +64,7 @@ export default function AllProjectsPage() {
                 {/* Budget Example */}
                 {p.budget && (
                   <div className="mt-3 text-xs text-gray-500">
-                    Budget: ${p.budget.actual} / ${p.budget.planned}
+                    Budget: ₦{p.budget.actual} / ₦{p.budget.planned}
                   </div>
                 )}
               </Link>

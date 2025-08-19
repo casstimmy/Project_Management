@@ -1,31 +1,34 @@
 import { useState, useEffect, useCallback } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 const statuses = ["todo", "inprogress", "done"];
 const statusColors = {
   todo: "bg-indigo-100 text-indigo-800",
-  inprogress: "bg-indigo-200 text-indigo-900",
-  done: "bg-indigo-300 text-indigo-900",
+  inprogress: "bg-yellow-100 text-yellow-800",
+  done: "bg-green-100 text-green-800",
 };
 
-export default function ListView({ project, onTaskClick, onDeleteTask }) {
+export default function ProjectTasks({ project }) {
   const [tasks, setTasks] = useState([]);
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editedTask, setEditedTask] = useState({});
+  const [date, setDate] = useState(new Date());
 
-  // ✅ Wrap fetchTasks in useCallback
+  const projectId = project?._id;
+
+  // Fetch tasks
   const fetchTasks = useCallback(async () => {
-    if (!project?._id) return;
+    if (!projectId) return;
     try {
-      const res = await fetch(`/api/tasks?projectId=${project._id}`);
+      const res = await fetch(`/api/tasks?projectId=${projectId}`);
       const data = await res.json();
       setTasks(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
-      setTasks([]);
     }
-  }, [project?._id]);
+  }, [projectId]);
 
-  // ✅ useEffect depends on fetchTasks
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -64,26 +67,64 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
     }
   };
 
-  return (
-    <div className="bg-gray-50 min-h-screen p-6">
-      <h2 className="text-3xl font-bold mb-8 text-gray-800">Tasks List</h2>
+  const getTasksForDate = (d) =>
+    tasks.filter((task) => {
+      if (!task.dueDate) return false;
+      const taskDate = new Date(task.dueDate);
+      return (
+        taskDate.getFullYear() === d.getFullYear() &&
+        taskDate.getMonth() === d.getMonth() &&
+        taskDate.getDate() === d.getDate()
+      );
+    });
 
-      {tasks.length === 0 ? (
-        <p className="text-gray-500 text-center py-10 text-lg">
-          No tasks available.
-        </p>
-      ) : (
-        <>
-          {/* Table for medium and large screens */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full border-collapse shadow rounded-xl">
-              <thead className="bg-gradient-to-r from-indigo-200 to-purple-200">
+  const tileContent = ({ date, view }) => {
+    if (view === "month") {
+      const dayTasks = getTasksForDate(date);
+      if (dayTasks.length > 0) {
+        return (
+          <div className="mt-1 flex flex-col gap-1">
+            {dayTasks.map((task) => (
+              <span
+                key={task._id}
+                className="bg-indigo-100 text-indigo-800 text-xs rounded-full px-2 py-0.5 truncate"
+                title={task.name}
+              >
+                {task.name}
+              </span>
+            ))}
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+
+  return (
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-white shadow-xl rounded-2xl border border-gray-100">
+      {/* Title with dynamic view */}
+      <h2 className="text-xl font-bold mb-6 text-gray-800">
+        List and Calendar
+      </h2>{" "}
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Task List Section */}
+        <div className="backdrop-blur-lg bg-white/80 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-slate-100 to-white text-gray-800 rounded-t-2xl border-y-2 border-gray-300 p-6 ">
+            <h2 className="text-lg font-semibold">Task List</h2>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse">
+              <thead className="bg-gray-50">
                 <tr>
                   {["Name", "Assignee", "Due Date", "Status", "Actions"].map(
                     (header) => (
                       <th
                         key={header}
-                        className="py-3 px-6 text-left text-gray-700 font-semibold text-sm uppercase tracking-wide"
+                        className="py-3 px-6 text-left text-gray-600 font-semibold text-xs uppercase tracking-wide border-b"
                       >
                         {header}
                       </th>
@@ -92,14 +133,16 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                 </tr>
               </thead>
               <tbody>
-                {tasks.map((task) => {
+                {tasks.map((task, idx) => {
                   const isEditing = editingTaskId === task._id;
                   return (
                     <tr
                       key={task._id}
-                      className="bg-white hover:shadow-lg transition-shadow duration-300"
+                      className={`${
+                        idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      } hover:bg-indigo-50/40 transition`}
                     >
-                      <td className="py-3 px-6 border-b text-gray-700">
+                      <td className="py-3 px-6 border-b">
                         {isEditing ? (
                           <input
                             type="text"
@@ -107,10 +150,12 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                             onChange={(e) =>
                               handleChange("name", e.target.value)
                             }
-                            className="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="border px-2 py-1 rounded w-full focus:ring-2 focus:ring-indigo-400"
                           />
                         ) : (
-                          task.name
+                          <span className="font-medium text-gray-800">
+                            {task.name}
+                          </span>
                         )}
                       </td>
                       <td className="py-3 px-6 border-b text-gray-600">
@@ -121,13 +166,13 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                             onChange={(e) =>
                               handleChange("assignee", { name: e.target.value })
                             }
-                            className="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="border px-2 py-1 rounded w-full focus:ring-2 focus:ring-indigo-400"
                           />
                         ) : (
                           task.assignee?.name || "Unassigned"
                         )}
                       </td>
-                      <td className="py-3 px-6 border-b text-gray-500 text-sm">
+                      <td className="py-3 px-6 border-b text-sm text-gray-500">
                         {task.dueDate
                           ? new Date(task.dueDate).toLocaleDateString()
                           : "N/A"}
@@ -138,7 +183,9 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                           onChange={(e) =>
                             handleStatusChange(task._id, e.target.value)
                           }
-                          className={`px-2 py-1 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ${statusColors[task.status]}`}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                            statusColors[task.status]
+                          }`}
                         >
                           {statuses.map((s) => (
                             <option key={s} value={s}>
@@ -147,17 +194,17 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                           ))}
                         </select>
                       </td>
-                      <td className="py-3 px-6 border-b flex gap-2 whitespace-nowrap">
+                      <td className="py-3 px-6 border-b flex gap-3">
                         {isEditing ? (
                           <>
                             <button
-                              className="text-indigo-700 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 text-xs font-semibold transition"
+                              className="text-indigo-600 font-medium hover:underline"
                               onClick={() => saveTask(task._id)}
                             >
                               Save
                             </button>
                             <button
-                              className="text-gray-600 bg-gray-50 px-2 py-1 rounded hover:bg-gray-100 text-xs font-semibold transition"
+                              className="text-gray-500 hover:underline"
                               onClick={() => setEditingTaskId(null)}
                             >
                               Cancel
@@ -166,7 +213,7 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                         ) : (
                           <>
                             <button
-                              className="text-indigo-700 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 text-xs font-semibold transition"
+                              className="text-indigo-600 font-medium hover:underline"
                               onClick={() => {
                                 setEditingTaskId(task._id);
                                 setEditedTask(task);
@@ -175,9 +222,11 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
                               Edit
                             </button>
                             <button
-                              className="text-red-700 bg-red-50 px-2 py-1 rounded hover:bg-red-100 text-xs font-semibold transition"
+                              className="text-red-600 font-medium hover:underline"
                               onClick={() =>
-                                onDeleteTask(task._id).then(fetchTasks)
+                                fetch(`/api/tasks/${task._id}`, {
+                                  method: "DELETE",
+                                }).then(fetchTasks)
                               }
                             >
                               Delete
@@ -191,117 +240,77 @@ export default function ListView({ project, onTaskClick, onDeleteTask }) {
               </tbody>
             </table>
           </div>
+        </div>
 
-          {/* Cards for small screens */}
-          <div className="md:hidden grid grid-cols-1 gap-4">
-            {tasks.map((task) => {
-              const isEditing = editingTaskId === task._id;
-              return (
-                <div
-                  key={task._id}
-                  className="bg-white p-4 rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 border border-gray-100"
-                >
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editedTask.name}
-                          onChange={(e) =>
-                            handleChange("name", e.target.value)
-                          }
-                          className="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      ) : (
-                        task.name
-                      )}
-                    </h3>
+        {/* Calendar Section */}
+        <div className="flex flex-col xl:flex-row gap-6 backdrop-blur-lg bg-white/80 rounded-2xl shadow-lg border border-gray-100 p-6">
+          {/* Calendar */}
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Calendar
+            </h2>
+            <Calendar
+              onChange={setDate}
+              value={date}
+              tileContent={tileContent}
+              className="react-calendar border-none text-gray-700 font-medium w-full rounded-xl shadow-sm"
+            />
+          </div>
+
+          {/* Daily Tasks */}
+          <div className="flex-1">
+            <h3 className="text-lg font-bold mb-3 text-gray-800">
+              {date.toDateString()}
+            </h3>
+            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
+              {getTasksForDate(date).length > 0 ? (
+                getTasksForDate(date).map((task) => (
+                  <div
+                    key={task._id}
+                    className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-sm flex justify-between items-center hover:shadow-md transition"
+                  >
+                    <span className="font-medium text-gray-800">
+                      {task.name}
+                    </span>
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[task.status]} transition-all duration-300`}
+                      className={`text-xs px-3 py-1 rounded-full font-semibold ${
+                        statusColors[task.status]
+                      }`}
                     >
-                      <select
-                        value={task.status}
-                        onChange={(e) =>
-                          handleStatusChange(task._id, e.target.value)
-                        }
-                        className="bg-transparent text-sm font-medium focus:outline-none"
-                      >
-                        {statuses.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      {task.status}
                     </span>
                   </div>
-
-                  <p className="text-gray-600 mt-2">
-                    <span className="font-medium">Assignee: </span>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedTask.assignee?.name || ""}
-                        onChange={(e) =>
-                          handleChange("assignee", { name: e.target.value })
-                        }
-                        className="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    ) : (
-                      task.assignee?.name || "Unassigned"
-                    )}
-                  </p>
-
-                  <p className="text-gray-500 mt-1 text-sm">
-                    <span className="font-medium">Due: </span>
-                    {task.dueDate
-                      ? new Date(task.dueDate).toLocaleDateString()
-                      : "N/A"}
-                  </p>
-
-                  <div className="flex gap-2 mt-4 flex-wrap">
-                    {isEditing ? (
-                      <>
-                        <button
-                          className="flex-1 text-white bg-indigo-600 px-3 py-1 rounded hover:bg-indigo-700 text-sm font-semibold transition"
-                          onClick={() => saveTask(task._id)}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="flex-1 text-gray-700 bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 text-sm font-semibold transition"
-                          onClick={() => setEditingTaskId(null)}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="flex-1 text-indigo-700 bg-indigo-50 px-3 py-1 rounded hover:bg-indigo-100 text-sm font-semibold transition"
-                          onClick={() => {
-                            setEditingTaskId(task._id);
-                            setEditedTask(task);
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="flex-1 text-red-700 bg-red-50 px-3 py-1 rounded hover:bg-red-100 text-sm font-semibold transition"
-                          onClick={() =>
-                            onDeleteTask(task._id).then(fetchTasks)
-                          }
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                ))
+              ) : (
+                <p className="text-gray-500 text-center italic">
+                  No tasks for this day
+                </p>
+              )}
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
+      {/* Calendar Styling Overrides */}
+      <style jsx global>{`
+        .react-calendar__tile--now {
+          background: #e0e7ff !important;
+          border-radius: 50%;
+        }
+        .react-calendar__tile--active {
+          background: #6366f1 !important;
+          color: white !important;
+          border-radius: 50%;
+        }
+        .react-calendar__tile:hover {
+          background: #dbeafe !important;
+          border-radius: 50%;
+          transition: background 0.2s;
+        }
+        .react-calendar__month-view__weekdays {
+          font-weight: 600;
+          color: #4b5563;
+        }
+      `}</style>
     </div>
   );
 }

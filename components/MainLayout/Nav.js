@@ -5,6 +5,9 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { jwtDecode } from "jwt-decode";
 import Sidebar from "./Sidebar";
+import Link from "next/link"
+
+
 
 export default function Nav({ children }) {
   const router = useRouter();
@@ -34,12 +37,12 @@ export default function Nav({ children }) {
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-16 px-4 bg-white/90 backdrop-blur-md border-b shadow-md transition-all duration-300">
         {/* Logo */}
         <div className="flex flex-col justify-center">
-          <div className="flex items-center gap-2">
-            <Image src="/images/Logo.png" alt="Logo" width={36} height={36} />
-            <span className="text-2xl font-bold text-blue-700 tracking-tight">
-              Pal
-            </span>
-          </div>
+       <Link href="/homePage" className="flex items-center">
+  <Image src="/images/Logo.png" alt="Logo" width={36} height={36} />
+  <span className="text-2xl font-bold text-blue-700 tracking-tight">
+    Pal
+  </span>
+</Link>
           <small className="text-xs text-gray-500">Project Management</small>
         </div>
 
@@ -87,7 +90,7 @@ export default function Nav({ children }) {
       <div className="flex flex-1 pt-10">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
-          <Sidebar isOpen={true} onClose={() => {}} />
+          <Sidebar user={user} isOpen={true} onClose={() => {}} />
         </div>
 
         {/* Mobile Sidebar Overlay */}
@@ -97,8 +100,8 @@ export default function Nav({ children }) {
               className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden transition-opacity"
               onClick={() => setMobileOpen(false)}
             />
-            <div className="fixed left-0 top-1 z-40 h-[calc(100vh)] w-72  md:hidden transition-transform transform">
-              <Sidebar isOpen={true} onClose={() => setMobileOpen(false)} />
+            <div className="fixed left-0 top-10 z-40 h-[calc(100vh)] w-72  md:hidden transition-transform transform">
+              <Sidebar user={user} isOpen={true} onClose={() => setMobileOpen(false)} />
             </div>
           </>
         )}

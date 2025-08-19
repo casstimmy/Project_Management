@@ -1,13 +1,13 @@
-import mongoose, { Schema, models } from "mongoose";
+import mongoose from "mongoose";
 
-const spaceSchema = new Schema(
-  {
-    name: { type: String, required: true },
-    description: { type: String },
-    createdBy: { type: String }, // optional: user ID or name
-    projects: [{ type: Schema.Types.ObjectId, ref: "Project" }],
-  },
-  { timestamps: true }
-);
+const SpaceSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String, default: "" },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  projects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
+}, { timestamps: true });
 
-export default models.Space || mongoose.model("Space", spaceSchema);
+// Check if model already exists to prevent overwrite errors
+const Space = mongoose.models.Space || mongoose.model("Space", SpaceSchema);
+
+export default Space;

@@ -9,19 +9,37 @@ import {
   CalendarDays,
   Clock,
 } from "lucide-react";
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { jwtDecode } from "jwt-decode";
 
 export default function HomePage() {
   const [timeOfDay, setTimeOfDay] = useState("");
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Greeting logic
     const hour = new Date().getHours();
-    if (hour < 12) {
-      setTimeOfDay("Morning");
-    } else if (hour < 18) {
-      setTimeOfDay("Afternoon");
-    } else {
-      setTimeOfDay("Evening");
+    if (hour < 12) setTimeOfDay("Morning");
+    else if (hour < 18) setTimeOfDay("Afternoon");
+    else setTimeOfDay("Evening");
+
+    // Decode JWT token
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUser(decoded);
+      } catch (err) {
+        console.error("Invalid token", err);
+      }
     }
   }, []);
 
@@ -41,7 +59,8 @@ export default function HomePage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-            Good {timeOfDay}, Ayo!
+            Good {timeOfDay},{" "}
+            {user?.name ? user.name.split(" ")[0] : "Guest"}!
           </h1>
           <p className="text-gray-600 text-sm md:text-base mt-1">
             Here&apos;s your workspace overview.
@@ -71,7 +90,12 @@ export default function HomePage() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="tasks" stroke="#3b82f6" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="tasks"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -84,9 +108,7 @@ export default function HomePage() {
 function DashboardCard({ icon, title, value }) {
   return (
     <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4 border border-gray-200">
-      <div className="bg-blue-100 text-blue-600 p-2 rounded-full">
-        {icon}
-      </div>
+      <div className="bg-blue-100 text-blue-600 p-2 rounded-full">{icon}</div>
       <div>
         <p className="text-sm text-gray-500">{title}</p>
         <h3 className="text-xl font-semibold text-gray-900">{value}</h3>

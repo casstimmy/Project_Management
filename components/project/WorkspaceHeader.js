@@ -2,7 +2,6 @@
 import {
   List,
   Layout,
-  Calendar,
   Plus,
   ClipboardCheck,
   BarChart2,
@@ -12,8 +11,7 @@ import {
 export default function WorkspaceHeader({ project, activeView, onChangeView }) {
   const navItems = [
     { id: "board", label: "Board", icon: Layout },
-    { id: "list", label: "List", icon: List },
-    { id: "calendar", label: "Calendar", icon: Calendar },
+    { id: "list", label: "List & Calendar", icon: List },
     { id: "checklist", label: "Checklist", icon: ClipboardCheck },
     { id: "gantt", label: "Gantt", icon: BarChart2 },
     { id: "budget", label: "Budget", icon: FileText },
@@ -23,7 +21,9 @@ export default function WorkspaceHeader({ project, activeView, onChangeView }) {
   return (
     <div className="border-b px-4 py-4 flex flex-col md:flex-row md:items-center justify-between md:gap-0">
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold text-gray-800">{project?.title || "Workspace"}</h1>
+        <h1 className="text-xl font-bold text-gray-800">
+          {project?.title || "Workspace"}
+        </h1>
         <div className="hidden md:flex items-center gap-3 flex-wrap">
           {navItems.map(({ id, label, icon: Icon }) => (
             <button

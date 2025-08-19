@@ -3,6 +3,11 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskModal from "../Modal/AddTaskModal";
 
 const statuses = ["todo", "inprogress", "done"];
+const statusLabels = {
+  todo: "To Do",
+  inprogress: "In Progress",
+  done: "Done",
+};
 const statusColors = {
   todo: "bg-indigo-100 text-indigo-800",
   inprogress: "bg-yellow-100 text-yellow-800",
@@ -82,12 +87,12 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
               </ul>
             </div>
           )}
-          {project.responsibilities?.length > 0 && (
+          {project.objectives?.length > 0 && (
             <div>
-              <span className="font-semibold text-gray-700">Responsibilities:</span>
+              <span className="font-semibold text-gray-700">Deliverables:</span>
               <ul className="list-disc list-inside text-sm text-gray-600 mt-1">
-                {project.responsibilities.map((r, i) => (
-                  <li key={i}>{`${r.role}: ${r.responsibility}`}</li>
+                {project.objectives.map((o, i) => (
+                  <li key={i}>{`${o.text}`}</li>
                 ))}
               </ul>
             </div>
@@ -135,7 +140,7 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
                     ${snapshot.isDraggingOver ? "bg-gradient-to-b from-indigo-50 to-indigo-100" : "bg-gray-50"}`}
                 >
                   <h3 className="font-bold mb-3 text-gray-700 text-center text-sm md:text-base">
-                    {status.toUpperCase()}
+                    {statusLabels[status].toUpperCase()}
                   </h3>
 
                   {tasksByStatus[status].map((task, index) => (
@@ -145,7 +150,7 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
                           ref={prov.innerRef}
                           {...prov.draggableProps}
                           {...prov.dragHandleProps}
-                          className={`mb-3 p-3 rounded-xl border shadow-sm transition-all duration-200 cursor-pointer
+                          className={`mb-3 p-3 rounded-xl border-y-3 border-gray-200 shadow-sm transition-all duration-200 cursor-pointer
                             bg-white hover:shadow-lg hover:scale-[1.02] ${
                               snap.isDragging ? "bg-indigo-50 border-indigo-300 shadow-lg" : ""
                             }`}

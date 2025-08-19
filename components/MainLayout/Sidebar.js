@@ -19,7 +19,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import ProjectModal from "../Modal/ProjectModal";
 
-export default function Sidebar() {
+export default function Sidebar({ user }) {
   const router = useRouter();
   const [showTasksMenu, setShowTasksMenu] = useState(false);
   const [expandedSpaces, setExpandedSpaces] = useState({ __main__: true });
@@ -31,6 +31,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     const fetchSpaces = async () => {
+
       try {
         const res = await fetch("/api/spaces");
         const data = await res.json();
@@ -112,6 +113,8 @@ export default function Sidebar() {
     }
   }, [router.asPath, spaces]);
 
+
+
   return (
     <>
    <aside
@@ -119,10 +122,10 @@ export default function Sidebar() {
     isCollapsed ? "w-20" : "w-72"
   } bg-white/80 backdrop-blur-xl border-r border-gray-300 h-[calc(100vh-3rem)] shadow-lg flex flex-col transition-all duration-300`}
 >
-  <div className="flex flex-col h-full relative pt-20">
+  <div className="flex flex-col h-full relative pt-10">
     {/* Collapse Button */}
     <div
-      className={`absolute top-20 z-50 ${
+      className={`absolute top-10 z-50 ${
         isCollapsed ? "right-7" : "right-4"
       }`}
     >
@@ -137,7 +140,16 @@ export default function Sidebar() {
     {/* Header */}
     {!isCollapsed && (
       <div className="flex items-center justify-between px-4 pb-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-800 tracking-tight">Home</h2>
+        
+            <Link
+  href="../homePage"
+  className="flex items-center cursor-pointer hover:text-blue-600 transition-colors"
+>
+  <h2 className="text-xl font-bold text-gray-800 tracking-tight">
+    Home
+  </h2>
+</Link>
+         
         <div className="flex items-center gap-2">
           <button className="flex items-center justify-center p-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 hover:scale-105 transition-all duration-300">
             <Plus size={18} />
@@ -236,8 +248,11 @@ export default function Sidebar() {
                   className={router.asPath === "/projects" ? "text-indigo-500" : "text-gray-700"}
                 />
               </span>
-              {!isCollapsed && <span className="font-medium">All Tasks – Ayoola&apos;s Workspace</span>}
-            </Link>
+              {!isCollapsed && (
+                    <span className="font-medium">
+                      All Tasks – {user?.name || "User"}&apos;s Workspace
+                    </span>
+                  )}     </Link>
 
             {/* Dynamic Spaces */}
             {spaces.map((space) => {

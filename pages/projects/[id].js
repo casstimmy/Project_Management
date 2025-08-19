@@ -10,7 +10,6 @@ import GanttChart from "@/components/project/GanttChart";
 import BudgetVsActual from "@/components/project/BudgetVsActual";
 import WeeklyReport from "@/components/project/WeeklyReport";
 import ListView from "@/components/project/ListView";
-import CalendarView from "@/components/project/CalendarView";
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -159,9 +158,7 @@ const handleAddTask = async (newTask) => {
   />
 )}
 
-        {activeView === "calendar" && (
-          <CalendarView   project={project}/>
-        )}
+       
 
         {activeView === "checklist" && (
           <EquipmentChecklist equipment={project.equipment || []} />
