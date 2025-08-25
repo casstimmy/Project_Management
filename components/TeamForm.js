@@ -1,30 +1,50 @@
 // components/TeamForm.js
 import axios from "axios";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trash2, Upload } from "lucide-react";
+import Loader from "./Loader";
 
-export default function TeamForm({
-  _id,
-  name: currentName,
-  role: currentRole,
-  type: currentType,
-  phone: currentPhone,
-  notes: currentNotes,
-  image: currentImage,
-}) {
+export default function TeamForm({ _id }) {
   const router = useRouter();
 
   // states
-  const [name, setName] = useState(currentName || "");
-  const [role, setRole] = useState(currentRole || "");
-  const [type, setType] = useState(currentType || "Worker");
-  const [phone, setPhone] = useState(currentPhone || "");
-  const [notes, setNotes] = useState(currentNotes || "");
-  const [image, setImage] = useState(currentImage || "");
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [type, setType] = useState("Worker");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [image, setImage] = useState("");
   const [file, setFile] = useState(null);
+
+  const [loading, setLoading] = useState(!!_id); // if editing, start in loading mode
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  // fetch member if editing
+  useEffect(() => {
+    async function fetchMember() {
+      if (_id) {
+        try {
+          const res = await axios.get(`/api/manage/team?id=${_id}`);
+          const member = res.data;
+
+          setName(member.name || "");
+          setRole(member.role || "");
+          setType(member.type || "Worker");
+          setPhone(member.phone || "");
+          setNotes(member.notes || "");
+          setImage(member.image || "");
+        } catch (error) {
+          console.error("Failed to fetch member:", error);
+          setErrorMessage("Failed to load member details.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+    fetchMember();
+  }, [_id]);
 
   // save member
   async function saveTeamMember(ev) {
@@ -34,35 +54,38 @@ export default function TeamForm({
       setErrorMessage("Name and Role are required.");
       return;
     }
-
     setErrorMessage("");
-    const data = { name, role, type, phone, notes, image };
+
+    let imageUrl = image;
+
+    // if new file, upload first
+    if (file) {
+      try {
+        const data = new FormData();
+        data.append("file", file);
+
+        const res = await axios.post("/api/upload", data);
+        imageUrl = res.data.links?.[0];
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        setErrorMessage("Failed to upload image. Please try again.");
+        return;
+      }
+    }
+
+    const data = { name, role, type, phone, notes, image: imageUrl };
 
     try {
       if (_id) {
-        await axios.put("/api/team", { ...data, _id });
+        await axios.put("/api/manage/team", { ...data, _id });
       } else {
-        await axios.post("/api/team", data);
+        await axios.post("/api/manage/team", data);
         setSuccessMessage("Team member added successfully!");
       }
       router.push("/manage/team");
     } catch (error) {
+      console.error("Error saving team member:", error);
       setErrorMessage("Failed to save team member. Please try again.");
-    }
-  }
-
-  // upload handler
-  async function handleUpload() {
-    if (!file) return;
-    const data = new FormData();
-    data.append("file", file);
-
-    try {
-      const res = await axios.post("/api/upload", data);
-      setImage(res.data.url); // ✅ updated to match corrected API
-      setFile(null);
-    } catch (error) {
-      console.error("Error uploading:", error);
     }
   }
 
@@ -71,13 +94,20 @@ export default function TeamForm({
     setFile(null);
   }
 
+  // ⏳ Wait until loading is done before rendering form
+  if (loading) {
+    return (
+     <Loader />
+    );
+  }
+
   return (
     <form
       onSubmit={saveTeamMember}
       className="max-w-3xl mx-auto px-6 py-8 bg-white shadow-2xl rounded-2xl transition hover:shadow-3xl"
     >
       <h2 className="text-2xl font-bold mb-8 text-gray-800 text-center">
-        ✨ Team Member Details
+        ✨ { _id ? "Edit Team Member" : "Add New Team Member" }
       </h2>
 
       {/* Grid layout */}
@@ -155,16 +185,6 @@ export default function TeamForm({
                 <Trash2 size={16} />
               </button>
             </div>
-          )}
-
-          {file && !image && (
-            <button
-              type="button"
-              onClick={handleUpload}
-              className="px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow hover:scale-105 transition"
-            >
-              Upload
-            </button>
           )}
         </div>
       </div>

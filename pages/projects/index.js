@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Layout from "@/components/MainLayout/Layout";
 import { Progress } from "@/components/ui/progress"; // optional if using shadcn/ui
+import Loader from "@/components/Loader";
 
 export default function AllProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -33,7 +34,9 @@ export default function AllProjectsPage() {
         </div>
 
         {loading ? (
-          <div>Loading...</div>
+          <div className="flex justify-center py-20">
+            <Loader />
+          </div>
         ) : projects.length === 0 ? (
           <div className="text-gray-600">No projects found.</div>
         ) : (
@@ -57,7 +60,9 @@ export default function AllProjectsPage() {
                     <p className="text-xs text-gray-500">
                       Progress: {p.progress.completed}/{p.progress.total}
                     </p>
-                    <Progress value={(p.progress.completed / p.progress.total) * 100} />
+                    <Progress
+                      value={(p.progress.completed / p.progress.total) * 100}
+                    />
                   </div>
                 )}
 

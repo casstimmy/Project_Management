@@ -5,7 +5,7 @@ import mime from "mime-types";
 
 import { mongooseConnect } from "@/lib/mongoose";
 
-const S3BucketName = "iopal-managment-system";
+const S3BucketName = "opal-managment-system";
 
 export default async function ImageHandler(req, res) {
   await mongooseConnect();

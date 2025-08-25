@@ -10,6 +10,7 @@ import GanttChart from "@/components/project/GanttChart";
 import BudgetVsActual from "@/components/project/BudgetVsActual";
 import WeeklyReport from "@/components/project/WeeklyReport";
 import ListView from "@/components/project/ListView";
+import Loader from "@/components/Loader";
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -40,8 +41,11 @@ useEffect(() => {
 }, [fetchProject]);
 
   useEffect(() => {
-    if (id) fetchProject();
-  }, [id]);
+  if (!id) return; // wait for id to be available
+  fetch(`/api/projects/${id}`)
+    .then((res) => res.json())
+    .then((data) => setProject(data));
+}, [id]);
 
   // === Handlers
   const handleDragEnd = async (result) => {
@@ -124,7 +128,9 @@ const handleAddTask = async (newTask) => {
   if (loading || !project) {
     return (
       <Layout>
-        <div className="p-6">Loading project...</div>
+        <div className="flex justify-center py-20">
+                   <Loader />
+                 </div>
       </Layout>
     );
   }
@@ -161,7 +167,7 @@ const handleAddTask = async (newTask) => {
        
 
         {activeView === "checklist" && (
-          <EquipmentChecklist equipment={project.equipment || []} />
+          <EquipmentChecklist project={project} />
         )}
 
        {activeView === "gantt" && <GanttChart project={project} />}

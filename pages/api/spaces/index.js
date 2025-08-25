@@ -1,5 +1,6 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Space from "@/models/Space";
+import Project from "@/models/Project"; // ✅ Import Project model so populate works
 
 export default async function handler(req, res) {
   await mongooseConnect();
@@ -7,6 +8,7 @@ export default async function handler(req, res) {
 
   try {
     if (method === "GET") {
+      // ✅ Ensure populate knows the "Project" model
       const spaces = await Space.find().populate("projects");
       return res.status(200).json(spaces);
     }
