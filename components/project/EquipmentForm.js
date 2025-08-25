@@ -12,70 +12,72 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
-async function saveEquipment(ev) {
-  ev.preventDefault();
-  if (!name.trim()) {
-    setErrorMessage("Name is required.");
-    return;
-  }
+  async function saveEquipment(ev) {
+    ev.preventDefault();
+    if (!name.trim()) {
+      setErrorMessage("Name is required.");
+      return;
+    }
 
-setSaving(true);
+    setErrorMessage("");
+    setSaving(true);
 
-  try {
-    let imageUrl = preview;
+    try {
+      let imageUrl = preview;
 
-    // If a file is selected, upload to S3 first
-    if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
+      // If a file is selected, upload to S3 first
+      if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const uploadRes = await axios.post("/api/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+        const uploadRes = await axios.post("/api/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
-      if (uploadRes.data.links && uploadRes.data.links.length > 0) {
-        imageUrl = uploadRes.data.links[0]; // S3 public URL
+        if (uploadRes.data.links && uploadRes.data.links.length > 0) {
+          imageUrl = uploadRes.data.links[0]; // S3 public URL
+        }
       }
-    }
 
-    const equipmentData = {
-      name: name.trim(),
-      details,
-      condition,
-      imageUrl,
-      checked: false,
-    };
+      const equipmentData = {
+        name: name.trim(),
+        details,
+        condition,
+        imageUrl,
+        checked: false,
+      };
 
-    let savedItem;
-    if (_id) {
-      const res = await axios.put("/api/equipment", { _id, ...equipmentData });
-      savedItem = res.data;
-      setSuccessMessage("Equipment updated successfully!");
-    } else {
-      const res = await axios.post("/api/equipment", equipmentData, {
-        headers: { "Content-Type": "application/json" },
-      });
-      savedItem = res.data;
-      setSuccessMessage("Equipment added successfully!");
-    }
+      let savedItem;
+      if (_id) {
+        const res = await axios.put("/api/equipment", {
+          _id,
+          ...equipmentData,
+        });
+        savedItem = res.data;
+        setSuccessMessage("Equipment updated successfully!");
+      } else {
+        const res = await axios.post("/api/equipment", equipmentData, {
+          headers: { "Content-Type": "application/json" },
+        });
+        savedItem = res.data;
+        setSuccessMessage("Equipment added successfully!");
+      }
 
-    if (onSave) onSave(savedItem);
-    if (onClose) onClose();
+      if (onSave) onSave(savedItem);
+      if (onClose) onClose();
 
-    setName("");
-    setDetails("");
-    setCondition("Good");
-    setFile(null);
-    setPreview("");
-  } catch (error) {
+      setName("");
+      setDetails("");
+      setCondition("Good");
+      setFile(null);
+      setPreview("");
+    } catch (error) {
       console.error("Save failed:", error.response?.data || error.message);
       setErrorMessage("Failed to save equipment. Please try again.");
     } finally {
-      setSaving(false); // ✅ stop saving
+      setSaving(false);
     }
-  
-}
-
+  }
 
   function removeImage() {
     setFile(null);
@@ -83,14 +85,22 @@ setSaving(true);
   }
 
   return (
-    <form onSubmit={saveEquipment} className="max-w-3xl mx-auto px-6 py-8 bg-white shadow-2xl rounded-2xl transition hover:shadow-3xl">
+    <form
+      onSubmit={saveEquipment}
+      className="max-w-3xl mx-auto px-6 py-8 bg-white shadow-2xl rounded-2xl transition hover:shadow-3xl"
+    >
       <h2 className="text-2xl font-bold mb-8 text-gray-800 text-center">
         🛠 {_id ? "Edit Equipment" : "Add New Equipment"}
       </h2>
 
       {/* Grid layout */}
       <div className="grid md:grid-cols-2 gap-6">
-        <InputField label="Name" value={name} setValue={setName} placeholder="Hammer, Drill..." />
+        <InputField
+          label="Name"
+          value={name}
+          setValue={setName}
+          placeholder="Hammer, Drill..."
+        />
         <SelectField
           label="Condition"
           value={condition}
@@ -138,7 +148,11 @@ setSaving(true);
             </label>
           ) : (
             <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-md group">
-              <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />
               <button
                 type="button"
                 onClick={removeImage}
@@ -152,17 +166,27 @@ setSaving(true);
       </div>
 
       {/* Messages */}
-      {errorMessage && <p className="text-red-600 mt-4 text-sm font-medium">{errorMessage}</p>}
-      {successMessage && <p className="text-green-600 mt-4 text-sm font-medium">{successMessage}</p>}
+      {errorMessage && (
+        <p className="text-red-600 mt-4 text-sm font-medium">{errorMessage}</p>
+      )}
+      {successMessage && (
+        <p className="text-green-600 mt-4 text-sm font-medium">
+          {successMessage}
+        </p>
+      )}
 
       {/* Buttons */}
       <div className="flex justify-end gap-4 mt-8">
-        <button type="button" onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg shadow hover:bg-gray-300 transition">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg shadow hover:bg-gray-300 transition"
+        >
           Cancel
         </button>
-         <button
+        <button
           type="submit"
-          disabled={saving}
+          disabled={saving} // ✅ disable button while saving
           className={`px-6 py-2 rounded-lg shadow text-white ${
             saving
               ? "bg-gray-400 cursor-not-allowed"
@@ -202,7 +226,9 @@ function SelectField({ label, value, setValue, options }) {
         className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
         ))}
       </select>
     </div>
