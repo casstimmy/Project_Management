@@ -34,23 +34,35 @@ export default async function handler(req, res) {
     }
 
  
-    if (method === "POST") {
-      const { name, role, type, email, phone } = req.body;
+if (method === "POST") {
+  const { name, role, type, email, phone, image } = req.body; // add image
 
-      if (!name || !role) {
-        return res.status(400).json({ success: false, message: "Name and role are required" });
-      }
+  if (!name || !role) {
+    return res.status(400).json({ success: false, message: "Name and role are required" });
+  }
 
-      const member = await Team.create({
-        name,
-        role,
-        type,
-        email,
-        phone,
-      });
+  const member = await Team.create({
+    name,
+    role,
+    type,
+    email,
+    phone,
+    image,
+  });
 
-      return res.status(201).json(member);
-    }
+  return res.status(201).json(member);
+}
+
+if (method === "PUT") {
+  const { _id, image, ...data } = req.body; // extract image too
+  if (!_id) return res.status(400).json({ success: false, message: "Member ID is required" });
+
+  const updated = await Team.findByIdAndUpdate(_id, { ...data, image }, { new: true });
+  if (!updated) return res.status(404).json({ success: false, message: "Member not found" });
+
+  return res.json(updated);
+}
+
 
     if (method === "PUT") {
       const { _id, ...data } = req.body;
