@@ -20,12 +20,11 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
     }
 
     setErrorMessage("");
-    setSaving(true); // ✅ start saving
+    setSaving(true);
 
     try {
       let imageUrl = preview;
 
-      // If a file is selected, upload to S3 first
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
@@ -49,7 +48,10 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
 
       let savedItem;
       if (_id) {
-        const res = await axios.put("/api/equipment", { _id, ...equipmentData });
+        const res = await axios.put("/api/equipment", {
+          _id,
+          ...equipmentData,
+        });
         savedItem = res.data;
         setSuccessMessage("Equipment updated successfully!");
       } else {
@@ -77,11 +79,101 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
   }
 
   return (
-    <form onSubmit={saveEquipment} className="max-w-3xl mx-auto px-6 py-8 bg-white shadow-2xl rounded-2xl transition hover:shadow-3xl">
+    <form
+      onSubmit={saveEquipment}
+      className="max-w-3xl mx-auto px-6 py-8 bg-white shadow-2xl rounded-2xl transition hover:shadow-3xl"
+    >
       <h2 className="text-2xl font-bold mb-8 text-gray-800 text-center">
         🛠 {_id ? "Edit Equipment" : "Add New Equipment"}
       </h2>
-
+      {/* Grid layout */}{" "}
+      <div className="grid md:grid-cols-2 gap-6">
+        {" "}
+        <InputField
+          label="Name"
+          value={name}
+          setValue={setName}
+          placeholder="Hammer, Drill..."
+        />{" "}
+        <SelectField
+          label="Condition"
+          value={condition}
+          setValue={setCondition}
+          options={[
+            { value: "Good", label: "Good" },
+            { value: "Needs Repair", label: "Needs Repair" },
+            { value: "Replace Soon", label: "Replace Soon" },
+          ]}
+        />{" "}
+      </div>{" "}
+      {/* Details */}{" "}
+      <div className="mt-6">
+        {" "}
+        <label className="block text-gray-700 font-medium mb-2">
+          Details
+        </label>{" "}
+        <textarea
+          className="w-full px-4 py-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="Extra notes (brand, model, condition...)"
+          rows={4}
+        />{" "}
+      </div>{" "}
+      {/* Upload photo */}{" "}
+      <div className="mt-6">
+        {" "}
+        <label className="block text-gray-700 font-medium mb-3">
+          Photo
+        </label>{" "}
+        <div className="flex items-center gap-4">
+          {" "}
+          {!preview ? (
+            <label className="w-32 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 rounded-xl cursor-pointer hover:bg-gray-50 transition">
+              {" "}
+              <Upload size={24} /> <span className="text-xs mt-1">Upload</span>{" "}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const selected = e.target.files?.[0];
+                  if (selected) {
+                    setFile(selected);
+                    setPreview(URL.createObjectURL(selected));
+                  }
+                }}
+                className="hidden"
+              />{" "}
+            </label>
+          ) : (
+            <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-md group">
+              {" "}
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />{" "}
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-90 hover:opacity-100 transition"
+              >
+                {" "}
+                <Trash2 size={16} />{" "}
+              </button>{" "}
+            </div>
+          )}{" "}
+        </div>{" "}
+      </div>{" "}
+      {/* Messages */}{" "}
+      {errorMessage && (
+        <p className="text-red-600 mt-4 text-sm font-medium">{errorMessage}</p>
+      )}{" "}
+      {successMessage && (
+        <p className="text-green-600 mt-4 text-sm font-medium">
+          {successMessage}
+        </p>
+      )}
       {/* Buttons */}
       <div className="flex justify-end gap-4 mt-8">
         <button
@@ -107,7 +199,6 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
     </form>
   );
 }
-
 
 /* --- Reusable Components --- */
 function InputField({ label, value, setValue, placeholder, type = "text" }) {
@@ -135,7 +226,9 @@ function SelectField({ label, value, setValue, options }) {
         className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
         ))}
       </select>
     </div>
