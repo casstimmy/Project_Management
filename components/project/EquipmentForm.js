@@ -25,7 +25,7 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
     try {
       let imageUrl = preview;
 
-      // If a file is selected, upload to S3 first
+    
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
@@ -35,7 +35,7 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
         });
 
         if (uploadRes.data.links && uploadRes.data.links.length > 0) {
-          imageUrl = uploadRes.data.links[0]; // S3 public URL
+          imageUrl = uploadRes.data.links[0];
         }
       }
 
