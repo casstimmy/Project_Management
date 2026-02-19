@@ -1,118 +1,264 @@
 import { useEffect, useState } from "react";
 import Layout from "@/components/MainLayout/Layout";
+import { StatCard } from "@/components/ui/SharedComponents";
 import {
-  ClipboardList,
-  UserCheck,
-  ListTodo,
-  UserCircle,
-  Briefcase,
-  CalendarDays,
-  Clock,
+  Package, Wrench, ClipboardList, AlertOctagon, ShieldCheck,
+  DollarSign, Building2, TrendingUp, AlertTriangle, BarChart3,
+  Activity, Calendar, ArrowRight,
 } from "lucide-react";
 import {
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell,
+  CartesianGrid, XAxis, YAxis, Tooltip, Legend,
+  ResponsiveContainer, LineChart, Line,
 } from "recharts";
 import { jwtDecode } from "jwt-decode";
+import Link from "next/link";
+
+const CHART_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"];
 
 export default function HomePage() {
   const [timeOfDay, setTimeOfDay] = useState("");
   const [user, setUser] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Greeting logic
     const hour = new Date().getHours();
     if (hour < 12) setTimeOfDay("Morning");
     else if (hour < 18) setTimeOfDay("Afternoon");
     else setTimeOfDay("Evening");
 
-    // Decode JWT token
     const token = localStorage.getItem("token");
     if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setUser(decoded);
-      } catch (err) {
-        console.error("Invalid token", err);
-      }
+      try { setUser(jwtDecode(token)); } catch {}
     }
+
+    fetchDashboard();
   }, []);
 
-  const chartData = [
-    { name: "Mon", tasks: 3 },
-    { name: "Tue", tasks: 4 },
-    { name: "Wed", tasks: 2 },
-    { name: "Thu", tasks: 5 },
-    { name: "Fri", tasks: 1 },
-    { name: "Sat", tasks: 3 },
-    { name: "Sun", tasks: 0 },
+  const fetchDashboard = async () => {
+    try {
+      const res = await fetch("/api/dashboard");
+      if (res.ok) {
+        const data = await res.json();
+        setDashboard(data);
+      }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  const formatCurrency = (v) => v ? `$${Number(v).toLocaleString()}` : "$0";
+  const s = dashboard?.summary || {};
+
+  const quickLinks = [
+    { label: "Asset Register", href: "/assets", icon: <Package size={18} />, color: "bg-blue-50 text-blue-600" },
+    { label: "Work Orders", href: "/workorders", icon: <ClipboardList size={18} />, color: "bg-orange-50 text-orange-600" },
+    { label: "Maintenance", href: "/maintenance", icon: <Wrench size={18} />, color: "bg-purple-50 text-purple-600" },
+    { label: "HSSE Audit", href: "/hsse", icon: <ShieldCheck size={18} />, color: "bg-emerald-50 text-emerald-600" },
+    { label: "Incidents", href: "/incidents", icon: <AlertOctagon size={18} />, color: "bg-red-50 text-red-600" },
+    { label: "Budgets", href: "/budgets", icon: <DollarSign size={18} />, color: "bg-indigo-50 text-indigo-600" },
   ];
 
   return (
     <Layout>
-      <div className="min-h-screen bg-white p-4 md:p-10">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-            Good {timeOfDay},{" "}
-            {user?.name ? user.name.split(" ")[0] : "Guest"}!
-          </h1>
-          <p className="text-gray-600 text-sm md:text-base mt-1">
-            Here&apos;s your workspace overview.
-          </p>
+      <div className="max-w-7xl mx-auto">
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">
+                Good {timeOfDay}, {user?.name ? user.name.split(" ")[0] : "Guest"}
+              </h1>
+              <p className="text-blue-100 mt-1 text-sm">
+                Welcome to OPAL FMS — your facility management overview
+              </p>
+            </div>
+            <div className="mt-4 md:mt-0 flex items-center gap-2 text-sm text-blue-100">
+              <Calendar size={16} />
+              {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            </div>
+          </div>
         </div>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <DashboardCard icon={<ClipboardList />} title="Priorities" value="5 Tasks" />
-          <DashboardCard icon={<UserCheck />} title="Assigned Comments" value="3 Replies" />
-          <DashboardCard icon={<ListTodo />} title="Personal List" value="12 Items" />
-          <DashboardCard icon={<UserCircle />} title="Assigned to Me" value="7 Tasks" />
-          <DashboardCard icon={<Briefcase />} title="My Work" value="Ongoing" />
-          <DashboardCard icon={<CalendarDays />} title="Agenda" value="2 Meetings" />
-          <DashboardCard icon={<Clock />} title="Recents" value="4 Updated" />
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard icon={<Package size={20} />} label="Total Assets" value={s.totalAssets || 0} color="blue"
+            subtext={`${s.assetsNearReplacement || 0} near replacement`} />
+          <StatCard icon={<ClipboardList size={20} />} label="Active Work Orders" value={s.activeWorkOrders || 0} color="orange"
+            subtext={`${s.overdueWorkOrders || 0} overdue`} />
+          <StatCard icon={<AlertOctagon size={20} />} label="Open Incidents" value={s.openIncidents || 0} color="red" />
+          <StatCard icon={<ShieldCheck size={20} />} label="Compliance Score" value={`${(s.complianceScore || 0).toFixed(0)}%`}
+            color={(s.complianceScore || 0) >= 80 ? "green" : "yellow"} />
         </div>
 
-        {/* Weekly Overview Chart */}
-        <div className="mt-10 bg-gray-100 p-6 rounded-xl shadow">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Weekly Overview
-          </h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="tasks"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard icon={<Building2 size={20} />} label="Sites" value={s.totalSites || 0} color="indigo" />
+          <StatCard icon={<BarChart3 size={20} />} label="Avg FCI" value={`${((s.averageFCI || 0) * 100).toFixed(1)}%`}
+            color={(s.averageFCI || 0) <= 0.1 ? "green" : "red"} />
+          <StatCard icon={<Wrench size={20} />} label="Maintenance Due" value={s.maintenanceDue || 0} color="purple" />
+          <StatCard icon={<DollarSign size={20} />} label="Budget Variance" value={formatCurrency(s.budgetVariance || 0)}
+            color={(s.budgetVariance || 0) >= 0 ? "green" : "red"} subtext={(s.budgetVariance || 0) >= 0 ? "Under budget" : "Over budget"} />
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Work Orders by Status */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Work Orders by Status</h3>
+            {dashboard?.charts?.workOrdersByStatus?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={dashboard.charts.workOrdersByStatus}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="_id" tick={{ fontSize: 12 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm">No work order data</div>
+            )}
+          </div>
+
+          {/* Assets by Category */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Assets by Category</h3>
+            {dashboard?.charts?.assetsByCategory?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={dashboard.charts.assetsByCategory} dataKey="count" nameKey="_id" cx="50%" cy="50%" outerRadius={90} label={({ _id, count }) => `${_id}: ${count}`}>
+                    {dashboard.charts.assetsByCategory.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm">No asset data</div>
+            )}
+          </div>
+        </div>
+
+        {/* Second Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Work Orders by Priority */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Work Orders by Priority</h3>
+            {dashboard?.charts?.workOrdersByPriority?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={dashboard.charts.workOrdersByPriority} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="_id" type="category" tick={{ fontSize: 12 }} width={80} />
+                  <Tooltip />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                    {dashboard.charts.workOrdersByPriority.map((entry, i) => {
+                      const colorMap = { low: "#10B981", medium: "#F59E0B", high: "#F97316", critical: "#EF4444" };
+                      return <Cell key={i} fill={colorMap[entry._id] || "#3B82F6"} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[220px] flex items-center justify-center text-gray-400 text-sm">No data</div>
+            )}
+          </div>
+
+          {/* Incidents by Type */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Incidents by Type</h3>
+            {dashboard?.charts?.incidentsByType?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={dashboard.charts.incidentsByType}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="_id" tick={{ fontSize: 11 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[220px] flex items-center justify-center text-gray-400 text-sm">No incident data</div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Access */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Quick Access</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {quickLinks.map((link) => (
+              <Link key={link.href} href={link.href}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200 group">
+                <div className={`p-2.5 rounded-lg ${link.color}`}>{link.icon}</div>
+                <span className="text-xs font-medium text-gray-600 group-hover:text-blue-600 text-center">{link.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent FCA */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-700">Recent FCA Assessments</h3>
+              <Link href="/fca" className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                View all <ArrowRight size={12} />
+              </Link>
+            </div>
+            {dashboard?.recent?.fca?.length > 0 ? (
+              <div className="space-y-3">
+                {dashboard.recent.fca.map((item) => (
+                  <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{item.building?.name || "—"}</p>
+                      <p className="text-xs text-gray-500">{item.assessor || "—"}</p>
+                    </div>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      (item.facilityConditionIndex || 0) <= 0.1 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                    }`}>
+                      FCI: {((item.facilityConditionIndex || 0) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-6">No assessments yet</p>
+            )}
+          </div>
+
+          {/* Recent Budgets */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-700">Recent Budgets</h3>
+              <Link href="/budgets" className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                View all <ArrowRight size={12} />
+              </Link>
+            </div>
+            {dashboard?.recent?.budgets?.length > 0 ? (
+              <div className="space-y-3">
+                {dashboard.recent.budgets.map((item) => (
+                  <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                      <p className="text-xs text-gray-500">{item.budgetType} • FY{item.fiscalYear}</p>
+                    </div>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      (item.totalVariance || 0) >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                    }`}>
+                      {formatCurrency(item.totalVariance)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-6">No budgets yet</p>
+            )}
           </div>
         </div>
       </div>
     </Layout>
-  );
-}
-
-function DashboardCard({ icon, title, value }) {
-  return (
-    <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4 border border-gray-200">
-      <div className="bg-blue-100 text-blue-600 p-2 rounded-full">{icon}</div>
-      <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <h3 className="text-xl font-semibold text-gray-900">{value}</h3>
-      </div>
-    </div>
   );
 }

@@ -1,383 +1,186 @@
-import SpaceModal from "../Modal/SpaceModal";
 import { useRouter } from "next/router";
-import {
-  Inbox,
-  List,
-  UserCheck,
-  CalendarDays,
-  Users,
-  Plus,
-  ChevronDown,
-  ChevronRight,
-  Search,
-  AppWindow,
-  CircleCheck,
-  CircleUserRound,
-  Network,
-} from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import ProjectModal from "../Modal/ProjectModal";
+import { useState } from "react";
+import {
+  LayoutDashboard, Building2, Package, ClipboardCheck,
+  ShieldCheck, AlertTriangle, Wrench, CalendarClock,
+  DollarSign, FileText, Users, ChevronDown,
+  ChevronRight, MapPin, Layers, Bell, Gauge,
+} from "lucide-react";
+
+const navSections = [
+  {
+    title: "OVERVIEW",
+    items: [
+      { href: "/homePage", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: "FACILITY MANAGEMENT",
+    items: [
+      {
+        label: "Locations",
+        icon: MapPin,
+        children: [
+          { href: "/locations/sites", label: "Sites" },
+          { href: "/locations/buildings", label: "Buildings" },
+          { href: "/locations/spaces", label: "Spaces" },
+        ],
+      },
+      { href: "/assets", label: "Asset Register", icon: Package },
+      { href: "/fca", label: "Condition Assessment", icon: ClipboardCheck },
+    ],
+  },
+  {
+    title: "SAFETY & COMPLIANCE",
+    items: [
+      { href: "/hsse", label: "HSSE Audit", icon: ShieldCheck },
+      { href: "/incidents", label: "Incidents", icon: AlertTriangle },
+      { href: "/emergency", label: "Emergency Plans", icon: Bell },
+    ],
+  },
+  {
+    title: "MAINTENANCE",
+    items: [
+      { href: "/maintenance", label: "Maintenance Plans", icon: CalendarClock },
+      { href: "/workorders", label: "Work Orders", icon: Wrench },
+    ],
+  },
+  {
+    title: "FINANCE",
+    items: [
+      { href: "/budgets", label: "Budgets & Finance", icon: DollarSign },
+    ],
+  },
+  {
+    title: "ADMINISTRATION",
+    items: [
+      { href: "/manage/team", label: "Team Management", icon: Users },
+      { href: "/reports", label: "Reports", icon: FileText },
+    ],
+  },
+];
 
 export default function Sidebar({ user }) {
   const router = useRouter();
-  const [showTasksMenu, setShowTasksMenu] = useState(false);
-  const [expandedSpaces, setExpandedSpaces] = useState({ __main__: true });
-  const [showModal, setShowModal] = useState(false);
-  const [activeSpace, setActiveSpace] = useState("");
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showSpaceModal, setShowSpaceModal] = useState(false);
-  const [spaces, setSpaces] = useState([]);
+  const [expanded, setExpanded] = useState({});
+  const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    const fetchSpaces = async () => {
-      try {
-        const res = await fetch("/api/spaces");
-        const data = await res.json();
-        setSpaces(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Failed to fetch spaces:", err);
-        setSpaces([]);
-      }
-    };
-
-    fetchSpaces();
-  }, []);
-
-  const refreshSpaces = async () => {
-    try {
-      const res = await fetch("/api/spaces");
-      const data = await res.json();
-      setSpaces(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Failed to refresh spaces:", err);
-      setSpaces([]);
-    }
+  const toggleExpand = (label) => {
+    setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  const toggleSpace = (space) => {
-    setExpandedSpaces((prev) => ({
-      ...prev,
-      [space]: !prev[space],
-    }));
-  };
-
-  const openModal = (spaceName) => {
-    setActiveSpace(spaceName);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setActiveSpace("");
-  };
-
-  const navLink = (href, label, Icon, extraClass = "") => {
-    const isActive =
-      router.pathname === href || router.pathname.startsWith(href);
-
-    return (
-      <Link
-        href={href}
-        className={`flex items-center gap-3 p-2 rounded-lg text-sm transition group ${extraClass} ${
-          isActive
-            ? "bg-indigo-100 text-indigo-700 font-medium"
-            : "hover:bg-gray-100 text-gray-700"
-        }`}
-      >
-        <Icon
-          size={18}
-          className={`group-hover:text-indigo-500 ${
-            isActive ? "text-indigo-500" : "text-gray-500"
-          }`}
-        />
-        {!isCollapsed && <span>{label}</span>}
-      </Link>
-    );
-  };
-
-  // Expand parent space if its project is active
-  useEffect(() => {
-    if (!spaces.length) return;
-    const activeProject = spaces.find((space) =>
-      space.projects?.some(
-        (project) => router.asPath === `/projects/${project._id}`
-      )
-    );
-    if (activeProject) {
-      setExpandedSpaces((prev) => ({
-        ...prev,
-        [activeProject.name]: true,
-      }));
-    }
-  }, [router.asPath, spaces]);
+  const isActive = (href) => router.pathname === href || router.asPath === href;
+  const isChildActive = (children) => children?.some((c) => isActive(c.href));
 
   return (
-    <>
-      <aside
-        className={`${
-          isCollapsed ? "w-20" : "w-72"
-        } bg-white/80 backdrop-blur-xl border-r border-gray-300 h-[calc(100vh-3rem)] shadow-lg flex flex-col transition-all duration-300`}
-      >
-        <div className="flex flex-col h-full relative pt-10">
-          {/* Collapse Button */}
-          <div
-            className={`absolute top-10 z-50 ${
-              isCollapsed ? "right-7" : "right-4"
-            }`}
-          >
-            <button
-              onClick={() => setIsCollapsed((prev) => !prev)}
-              className="inline-flex items-center justify-center p-2 text-gray-700 hover:text-indigo-600 hover:scale-110 rounded-md transition-all duration-300 shadow-sm"
-            >
-              <AppWindow size={18} />
-            </button>
-          </div>
+    <aside
+      className={`${collapsed ? "w-[68px]" : "w-64"} bg-white border-r border-gray-200 h-[calc(100vh-3.5rem)] flex flex-col transition-all duration-200`}
+    >
+      {/* Collapse toggle */}
+      <div className={`flex items-center ${collapsed ? "justify-center" : "justify-end"} px-3 pt-3`}>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+          title={collapsed ? "Expand" : "Collapse"}
+        >
+          <Layers size={16} />
+        </button>
+      </div>
 
-          {/* Header */}
-          {!isCollapsed && (
-            <div className="flex items-center justify-between px-4 pb-4 border-b border-gray-200">
-              <Link
-                href="../homePage"
-                className="flex items-center cursor-pointer hover:text-blue-600 transition-colors"
-              >
-                <h2 className="text-xl font-bold text-gray-800 tracking-tight">
-                  Home
-                </h2>
-              </Link>
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
+        {navSections.map((section) => (
+          <div key={section.title}>
+            {!collapsed && (
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">
+                {section.title}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                // Items with children (expandable)
+                if (item.children) {
+                  const childActive = isChildActive(item.children);
+                  const isExpanded = expanded[item.label] || childActive;
 
-              <div className="flex items-center gap-2">
-                <button className="flex items-center justify-center p-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 hover:scale-105 transition-all duration-300">
-                  <Plus size={18} />
-                </button>
-                <button className="flex items-center justify-center p-2 mr-10 bg-gray-100 rounded-lg shadow hover:bg-gray-200 hover:scale-105 transition-all duration-300">
-                  <Search size={18} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-4 text-sm">
-            {/* Primary Links */}
-            <div className="space-y-2">
-              {navLink("/inbox", "Inbox", Inbox, isCollapsed ? "mt-9" : "")}
-
-              {/* My Tasks Section */}
-              <div>
-                <button
-                  onClick={() => setShowTasksMenu((prev) => !prev)}
-                  className="w-full flex items-center justify-between px-2 py-2 font-medium hover:bg-gray-100 rounded-lg transition-all duration-300 shadow-sm"
-                >
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <CircleCheck size={16} className="text-gray-500" />
-                    {!isCollapsed && <span>My Tasks</span>}
-                  </div>
-                  {showTasksMenu ? (
-                    <ChevronDown
-                      size={16}
-                      className="text-gray-400 transition-transform duration-300"
-                    />
-                  ) : (
-                    <ChevronRight
-                      size={16}
-                      className="text-gray-400 transition-transform duration-300"
-                    />
-                  )}
-                </button>
-
-                {showTasksMenu && (
-                  <div className="ml-6 mt-2 space-y-1">
-                    {navLink("/myTask/assigned", "Assigned to me", UserCheck)}
-                    {navLink("/myTask/today&Overdue", "Today & Overdue", CalendarDays)}
-                    {navLink("/myTask/personal-list", "Personal List", CircleUserRound)}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Spaces */}
-            <div className="pt-4">
-              <div className="flex items-center justify-between px-2 py-2 hover:bg-gray-100 rounded-lg group transition-all duration-300">
-                <button
-                  onClick={() =>
-                    setExpandedSpaces((prev) => ({
-                      ...prev,
-                      __main__: !prev.__main__,
-                    }))
-                  }
-                  className="flex items-center gap-2 flex-1 text-xs font-semibold uppercase text-gray-600"
-                >
-                  {!isCollapsed && (
-                    <>
-                      <ChevronRight
-                        size={16}
-                        className={`text-gray-400 transition-transform duration-300 ${
-                          expandedSpaces.__main__ ? "rotate-90" : ""
+                  return (
+                    <div key={item.label}>
+                      <button
+                        onClick={() => toggleExpand(item.label)}
+                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition group ${
+                          childActive
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }`}
-                      />
-                      <span>Spaces</span>
-                    </>
-                  )}
-                </button>
-
-                {!isCollapsed && (
-                  <button
-                    onClick={() => setShowSpaceModal(true)}
-                    className="p-1 rounded hover:bg-gray-200 transition-colors"
-                    title="Add New Space"
-                  >
-                    <Plus size={16} className="text-gray-500" />
-                  </button>
-                )}
-              </div>
-
-              {expandedSpaces.__main__ && (
-                <div className="ml-2 mt-2 space-y-2">
-                  {/* All Tasks */}
-                  <Link
-                    href="/projects"
-                    className={`flex items-center gap-3 px-4 py-2 mt-2 text-sm rounded-md shadow-sm transition
-                      hover:shadow hover:scale-102 transform ${
-                        router.asPath === "/projects"
-                          ? "bg-indigo-100 text-indigo-700 font-medium"
-                          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                      }`}
-                  >
-                    <span className="bg-white p-2 rounded-md shadow">
-                      <Network
-                        size={16}
-                        className={
-                          router.asPath === "/projects"
-                            ? "text-indigo-500"
-                            : "text-gray-700"
-                        }
-                      />
-                    </span>
-                    {!isCollapsed && (
-                      <span className="font-medium">
-                        All Tasks – {user?.name || "User"}&apos;s Workspace
-                      </span>
-                    )}
-                  </Link>
-
-                  {/* Dynamic Spaces */}
-                  {spaces.map((space) => {
-                    const isSpaceActive = space.projects?.some(
-                      (project) => router.asPath === `/projects/${project._id}`
-                    );
-
-                    return (
-                      <div key={space._id} className="mb-2">
-                        <button
-                          onClick={() => toggleSpace(space.name)}
-                          className={`flex items-center justify-between w-full px-2 py-2 rounded-lg transition-all duration-300 hover:shadow-sm
-                            ${
-                              isSpaceActive
-                                ? "bg-indigo-100 text-indigo-700 font-medium shadow-inner"
-                                : "hover:bg-gray-100 text-gray-700"
-                            }`}
-                        >
-                          <div className="flex items-center gap-2 text-sm">
-                            <Users
-                              size={16}
-                              className={
-                                isSpaceActive ? "text-indigo-500" : "text-gray-500"
-                              }
-                            />
-                            {!isCollapsed && space.name}
-                          </div>
-                          {expandedSpaces[space.name] ? (
-                            <ChevronDown
-                              size={16}
-                              className="text-gray-400 transition-transform duration-300"
-                            />
-                          ) : (
-                            <ChevronRight
-                              size={16}
-                              className="text-gray-400 transition-transform duration-300"
-                            />
-                          )}
-                        </button>
-
-                        {expandedSpaces[space.name] && (
-                          <div className="ml-6 mt-2 space-y-1 bg-gray-50 p-2 rounded-b-lg shadow-inner">
-                            {space.projects?.map((project) => {
-                              const isActive =
-                                router.asPath === `/projects/${project._id}`;
-                              return (
-                                <Link
-                                  key={project._id}
-                                  href={`/projects/${project._id}`}
-                                  className={`flex items-center gap-2 p-2 text-sm rounded transition-all duration-300
-                                    ${
-                                      isActive
-                                        ? "bg-indigo-100 text-indigo-700 font-medium shadow-inner"
-                                        : "hover:bg-white text-gray-600"
-                                    }`}
-                                >
-                                  <List
-                                    size={14}
-                                    className={
-                                      isActive ? "text-indigo-500" : "text-gray-500"
-                                    }
-                                  />
-                                  {!isCollapsed && project.title}
-                                </Link>
-                              );
-                            })}
-
-                            <button
-                              onClick={() => openModal(space.name)}
-                              className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 mt-2 transition-transform duration-300 hover:scale-105"
-                            >
-                              <Plus size={14} />
-                              {!isCollapsed && "Add Project"}
-                            </button>
-                          </div>
+                      >
+                        <item.icon size={18} className={childActive ? "text-blue-500" : "text-gray-400 group-hover:text-gray-600"} />
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 text-left font-medium">{item.label}</span>
+                            {isExpanded ? (
+                              <ChevronDown size={14} className="text-gray-400" />
+                            ) : (
+                              <ChevronRight size={14} className="text-gray-400" />
+                            )}
+                          </>
                         )}
-                      </div>
-                    );
-                  })}
+                      </button>
+                      {isExpanded && !collapsed && (
+                        <div className="ml-5 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
+                          {item.children.map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className={`block px-2.5 py-1.5 text-sm rounded-md transition ${
+                                isActive(child.href)
+                                  ? "bg-blue-50 text-blue-700 font-medium"
+                                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                              }`}
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
 
-                  <button
-                    onClick={() => setShowSpaceModal(true)}
-                    className="mt-2 flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 transition-transform duration-300 hover:scale-105 ml-2"
+                // Simple nav item
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition group ${
+                      active
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
                   >
-                    <Plus size={14} />
-                    {!isCollapsed && "New Workspace"}
-                  </button>
-                </div>
-              )}
+                    <item.icon
+                      size={18}
+                      className={active ? "text-blue-500" : "text-gray-400 group-hover:text-gray-600"}
+                    />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+              })}
             </div>
-          </nav>
+          </div>
+        ))}
+      </nav>
 
-          {/* Footer */}
-          {!isCollapsed && (
-            <div className="border-t border-gray-300 px-4 py-3 mt-auto">
-              {navLink("/manage/team", "Manage Team", Users)}
-            </div>
-          )}
+      {/* Footer */}
+      {!collapsed && (
+        <div className="border-t border-gray-100 px-4 py-3">
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <Gauge size={14} />
+            <span>OPAL FMS v1.0</span>
+          </div>
         </div>
-      </aside>
-
-      {/* Modals */}
-      {showModal && (
-        <ProjectModal
-          activeSpace={activeSpace}
-          closeModal={closeModal}
-          allSpaces={spaces}
-          onProjectCreated={refreshSpaces}
-        />
       )}
-      {showSpaceModal && (
-        <SpaceModal
-          closeModal={() => setShowSpaceModal(false)}
-          onSpaceCreated={(newSpace) => {
-            setSpaces((prev) => [...prev, { ...newSpace, projects: [] }]);
-          }}
-        />
-      )}
-    </>
+    </aside>
   );
 }
