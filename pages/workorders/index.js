@@ -113,7 +113,7 @@ export default function WorkOrdersPage() {
   };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : "—";
-  const formatCurrency = (v) => v ? `$${Number(v).toLocaleString()}` : "—";
+  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "—";
 
   const columns = [
     { header: "Work Order", render: (row) => (

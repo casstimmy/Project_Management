@@ -6,6 +6,7 @@ import {
   ShieldCheck, AlertTriangle, Wrench, CalendarClock,
   DollarSign, FileText, Users, ChevronDown,
   ChevronRight, MapPin, Layers, Bell, Gauge,
+  FolderKanban, Settings,
 } from "lucide-react";
 
 const navSections = [
@@ -44,6 +45,12 @@ const navSections = [
     items: [
       { href: "/maintenance", label: "Maintenance Plans", icon: CalendarClock },
       { href: "/workorders", label: "Work Orders", icon: Wrench },
+    ],
+  },
+  {
+    title: "PROJECT MANAGEMENT",
+    items: [
+      { href: "/projects", label: "Projects", icon: FolderKanban },
     ],
   },
   {
@@ -88,8 +95,8 @@ export default function Sidebar({ user }) {
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
+      {/* Navigation - fixed, no scroll */}
+      <nav className="flex-1 px-3 py-2 space-y-4 overflow-hidden">
         {navSections.map((section) => (
           <div key={section.title}>
             {!collapsed && (
@@ -172,15 +179,29 @@ export default function Sidebar({ user }) {
         ))}
       </nav>
 
-      {/* Footer */}
-      {!collapsed && (
-        <div className="border-t border-gray-100 px-4 py-3">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+      {/* Footer with Settings */}
+      <div className="border-t border-gray-100 px-3 py-3 space-y-2">
+        <Link
+          href="/admin/settings"
+          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition group ${
+            isActive("/admin/settings")
+              ? "bg-blue-50 text-blue-700 font-medium"
+              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          }`}
+        >
+          <Settings
+            size={18}
+            className={isActive("/admin/settings") ? "text-blue-500" : "text-gray-400 group-hover:text-gray-600"}
+          />
+          {!collapsed && <span>Settings</span>}
+        </Link>
+        {!collapsed && (
+          <div className="flex items-center gap-2 text-xs text-gray-400 px-2.5">
             <Gauge size={14} />
             <span>OPAL shire v1.0</span>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   );
 }

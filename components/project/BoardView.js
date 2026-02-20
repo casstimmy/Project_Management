@@ -102,7 +102,7 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
               <span className="font-semibold text-gray-700">Budget:</span>
               <ul className="list-disc list-inside text-sm text-gray-600 mt-1">
                 {project.budget.map((b, i) => (
-                  <li key={i}>{`${b.category}: $${b.amount}`}</li>
+                  <li key={i}>{`${b.category}: ₦${Number(b.amount).toLocaleString()}`}</li>
                 ))}
               </ul>
             </div>

@@ -94,7 +94,7 @@ export default function FCAPage() {
     return "Critical";
   };
 
-  const formatCurrency = (v) => v ? `$${Number(v).toLocaleString()}` : "—";
+  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "—";
 
   const columns = [
     { header: "Building", render: (row) => (

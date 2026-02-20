@@ -92,7 +92,7 @@ export default function BudgetsPage() {
     setForm({ ...form, lineItems: form.lineItems.filter((_, idx) => idx !== i) });
   };
 
-  const formatCurrency = (v) => v ? `$${Number(v).toLocaleString()}` : "$0";
+  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "₦0";
 
   const totalBudgeted = budgets.reduce((s, b) => s + (b.totalBudgeted || 0), 0);
   const totalActual = budgets.reduce((s, b) => s + (b.totalActual || 0), 0);
@@ -163,7 +163,7 @@ export default function BudgetsPage() {
               <BarChart data={budgetByType}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <YAxis tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v) => formatCurrency(v)} />
                 <Legend />
                 <Bar dataKey="budgeted" fill="#3B82F6" name="Budgeted" radius={[4, 4, 0, 0]} />

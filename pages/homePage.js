@@ -47,7 +47,7 @@ export default function HomePage() {
     finally { setLoading(false); }
   };
 
-  const formatCurrency = (v) => v ? `$${Number(v).toLocaleString()}` : "$0";
+  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "₦0";
   const s = dashboard?.summary || {};
 
   const quickLinks = [
@@ -93,8 +93,8 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard icon={<Building2 size={20} />} label="Sites" value={s.totalSites || 0} color="indigo" />
-          <StatCard icon={<BarChart3 size={20} />} label="Avg FCI" value={`${((s.averageFCI || 0) * 100).toFixed(1)}%`}
-            color={(s.averageFCI || 0) <= 0.1 ? "green" : "red"} />
+          <StatCard icon={<BarChart3 size={20} />} label="Avg FCI" value={`${((s.facilityConditionIndex || 0) * 100).toFixed(1)}%`}
+            color={(s.facilityConditionIndex || 0) <= 0.1 ? "green" : "red"} />
           <StatCard icon={<Wrench size={20} />} label="Maintenance Due" value={s.maintenanceDue || 0} color="purple" />
           <StatCard icon={<DollarSign size={20} />} label="Budget Variance" value={formatCurrency(s.budgetVariance || 0)}
             color={(s.budgetVariance || 0) >= 0 ? "green" : "red"} subtext={(s.budgetVariance || 0) >= 0 ? "Under budget" : "Over budget"} />
@@ -208,9 +208,9 @@ export default function HomePage() {
                 View all <ArrowRight size={12} />
               </Link>
             </div>
-            {dashboard?.recent?.fca?.length > 0 ? (
+            {dashboard?.recent?.fcaAssessments?.length > 0 ? (
               <div className="space-y-3">
-                {dashboard.recent.fca.map((item) => (
+                {dashboard.recent.fcaAssessments.map((item) => (
                   <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{item.building?.name || "—"}</p>

@@ -40,12 +40,7 @@ useEffect(() => {
   fetchProject();
 }, [fetchProject]);
 
-  useEffect(() => {
-  if (!id) return; // wait for id to be available
-  fetch(`/api/projects/${id}`)
-    .then((res) => res.json())
-    .then((data) => setProject(data));
-}, [id]);
+
 
   // === Handlers
   const handleDragEnd = async (result) => {

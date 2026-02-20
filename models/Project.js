@@ -16,6 +16,7 @@ const approvalSchema = new Schema({ name: String, role: String, date: Date });
 const projectSchema = new Schema(
   {
     space: { type: Schema.Types.ObjectId, ref: "Space", required: true },
+    site: { type: Schema.Types.ObjectId, ref: "Site" },
     title: { type: String, required: true },
     purpose: String,
     objectives: [objectiveSchema],

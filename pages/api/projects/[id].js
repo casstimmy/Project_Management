@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   switch (method) {
     case "GET":
       try {
-        const project = await Project.findById(id);
+        const project = await Project.findById(id).populate("tasks");
         if (!project) {
           return res.status(404).json({ error: "Project not found." });
         }

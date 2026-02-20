@@ -39,6 +39,7 @@ export default async function handler(req, res) {
       workOrdersByPriority,
       monthlyWorkOrders,
       incidentsByType,
+      overdueWorkOrders,
     ] = await Promise.all([
       Asset.countDocuments(),
       Asset.countDocuments({ status: "in-service" }),
@@ -91,6 +92,10 @@ export default async function handler(req, res) {
         { $group: { _id: "$type", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),
+      WorkOrder.countDocuments({
+        status: { $in: ["open", "assigned", "in-progress"] },
+        dueDate: { $lt: now },
+      }),
     ]);
 
     // Calculate average FCI
@@ -128,6 +133,7 @@ export default async function handler(req, res) {
         budgetVariance,
         totalBudgeted,
         totalActual,
+        overdueWorkOrders,
       },
       charts: {
         assetsByCategory,
