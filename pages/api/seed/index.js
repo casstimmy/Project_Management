@@ -532,8 +532,8 @@ export default async function handler(req, res) {
           { risk: "Security Breach", likelihood: 2, impact: 4, riskPriority: 8, mitigationStrategy: "Access control, CCTV monitoring, security patrols", responsiblePerson: "Ibrahim Danjuma" },
         ],
         biaItems: [
-          { process: "Data Center Operations", description: "Server and network infrastructure", criticality: "critical", rto: "1 hour", rpo: "15 minutes", maxDowntime: "4 hours", financialImpact: 5000000 },
-          { process: "Building Access Control", description: "Entry/exit management systems", criticality: "high", rto: "30 minutes", rpo: "N/A", maxDowntime: "2 hours", financialImpact: 500000 },
+          { process: "Data Center Operations", description: "Server and network infrastructure", criticality: "critical", rto: 1, rpo: 0.25, maxDowntime: 4, financialImpact: 5000000 },
+          { process: "Building Access Control", description: "Entry/exit management systems", criticality: "high", rto: 0.5, rpo: 0, maxDowntime: 2, financialImpact: 500000 },
         ],
         incidentResponsePlan: "1. Alert → 2. Assess → 3. Activate response team → 4. Contain → 5. Communicate → 6. Recover → 7. Review",
         evacuationProcedure: "Floor wardens initiate evacuation via stairwells. Elevators disabled. Assembly at designated points. Roll call within 10 minutes.",
@@ -551,7 +551,7 @@ export default async function handler(req, res) {
           { name: "Nearest Hospital", role: "Medical", organization: "Reddington Hospital VI", phone: "01-271 5050", type: "external" },
         ],
         drillLogs: [
-          { drillType: "Fire Evacuation", date: new Date(now.getTime() - 90 * 86400000), participants: 250, duration: "18 minutes", scenario: "Fire alarm triggered on 8th floor", observations: "Evacuation completed in 12 minutes. Some staff used elevator.", improvements: "Reinforce no-elevator policy. Additional floor warden training.", conductedBy: "Halima Yusuf", passed: true },
+          { drillType: "Fire Evacuation", date: new Date(now.getTime() - 90 * 86400000), participants: 250, duration: 18, scenario: "Fire alarm triggered on 8th floor", observations: "Evacuation completed in 12 minutes. Some staff used elevator.", improvements: "Reinforce no-elevator policy. Additional floor warden training.", conductedBy: "Halima Yusuf", passed: true },
         ],
         nextDrillDate: new Date(now.getTime() + 60 * 86400000),
         recoveryPlan: "Business continuity activation: 1) Assess damage 2) Activate DR site 3) Communicate with stakeholders 4) Begin recovery operations",
