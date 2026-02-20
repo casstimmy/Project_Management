@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import Layout from "@/components/MainLayout/Layout";
+import Loader from "@/components/Loader";
 import { StatCard } from "@/components/ui/SharedComponents";
 import {
   Package, Wrench, ClipboardList, AlertOctagon, ShieldCheck,
   DollarSign, Building2, TrendingUp, AlertTriangle, BarChart3,
-  Activity, Calendar, ArrowRight,
+  Activity, Calendar, ArrowRight, FolderKanban, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   CartesianGrid, XAxis, YAxis, Tooltip, Legend,
-  ResponsiveContainer, LineChart, Line,
+  ResponsiveContainer,
 } from "recharts";
 import { jwtDecode } from "jwt-decode";
 import Link from "next/link";
@@ -21,6 +22,8 @@ export default function HomePage() {
   const [user, setUser] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState([]);
+  const [expandedProject, setExpandedProject] = useState(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -34,7 +37,20 @@ export default function HomePage() {
     }
 
     fetchDashboard();
+    fetchProjects();
   }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("/api/projects");
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchDashboard = async () => {
     try {
@@ -61,6 +77,9 @@ export default function HomePage() {
 
   return (
     <Layout>
+      {loading ? (
+        <Loader text="Loading dashboard..." />
+      ) : (
       <div className="max-w-7xl mx-auto">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
@@ -184,6 +203,73 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Project Overview */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <FolderKanban size={16} className="text-blue-500" />
+              Project Overview
+            </h3>
+            <Link href="/projects" className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
+              View all <ArrowRight size={12} />
+            </Link>
+          </div>
+          {projects.length > 0 ? (
+            <div className="space-y-2">
+              {projects.slice(0, 5).map((proj) => {
+                const isExpanded = expandedProject === proj._id;
+                const taskCount = proj.tasks?.length || 0;
+                const doneTasks = proj.tasks?.filter?.((t) => typeof t === "object" && t.status === "done")?.length || 0;
+                const budgetTotal = (proj.budget || []).reduce((s, b) => s + (b.amount || 0), 0);
+
+                return (
+                  <div key={proj._id} className="border border-gray-100 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setExpandedProject(isExpanded ? null : proj._id)}
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition text-left"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{proj.title}</p>
+                        <p className="text-xs text-gray-500">{taskCount} tasks • ₦{budgetTotal.toLocaleString()} budget</p>
+                      </div>
+                      {isExpanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                    </button>
+                    {isExpanded && (
+                      <div className="px-4 pb-3 border-t border-gray-50 bg-gray-50/50">
+                        <div className="grid grid-cols-2 gap-3 py-3 text-xs">
+                          <div>
+                            <span className="text-gray-500">Purpose:</span>
+                            <p className="text-gray-700 mt-0.5">{proj.purpose || "—"}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Scope:</span>
+                            <p className="text-gray-700 mt-0.5">{proj.scope || "—"}</p>
+                          </div>
+                        </div>
+                        {proj.budget?.length > 0 && (
+                          <div className="flex gap-2 flex-wrap mb-2">
+                            {proj.budget.map((b, i) => (
+                              <span key={i} className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                                {b.category}: ₦{b.amount?.toLocaleString()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <Link href={`/projects/${proj._id}`}
+                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium">
+                          Open Project <ArrowRight size={12} />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-6">No projects yet</p>
+          )}
+        </div>
+
         {/* Quick Access */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Quick Access</h3>
@@ -259,6 +345,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      )}
     </Layout>
   );
 }

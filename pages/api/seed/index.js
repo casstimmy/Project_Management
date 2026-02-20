@@ -648,6 +648,60 @@ export default async function handler(req, res) {
     // Link projects to space
     await Space.findByIdAndUpdate(space._id, { $push: { projects: { $each: projects.map(p => p._id) } } });
 
+    // ─── 15. Project-scoped Equipment ───
+    const projectEquipment = await Equipment.insertMany([
+      { name: "VRV Outdoor Unit (20HP)", details: "Daikin VRV IV heat recovery outdoor unit for HVAC project", condition: "Good", checked: false, projectId: projects[0]._id },
+      { name: "Refrigerant Recovery Machine", details: "Portable refrigerant recovery unit for HVAC decommissioning", condition: "Good", checked: true, projectId: projects[0]._id },
+      { name: "Copper Pipe Cutter Set", details: "Professional pipe cutting tools for HVAC installation", condition: "Good", checked: true, projectId: projects[0]._id },
+      { name: "Roofing Membrane Roll (TPO)", details: "Single-ply TPO membrane for flat roof replacement", condition: "Good", checked: false, projectId: projects[1]._id },
+      { name: "Acoustic Ceiling Tiles (Box 20)", details: "Armstrong acoustic ceiling panels for conference hall", condition: "Good", checked: false, projectId: projects[1]._id },
+      { name: "IP Camera (Hikvision 4MP)", details: "Outdoor bullet camera with IR for CCTV expansion", condition: "Good", checked: false, projectId: projects[2]._id },
+      { name: "Biometric Access Reader", details: "ZKTeco fingerprint + card reader for access control", condition: "Good", checked: false, projectId: projects[2]._id },
+      { name: "Network Switch (48-Port PoE)", details: "Cisco Catalyst PoE switch for camera network", condition: "Good", checked: true, projectId: projects[2]._id },
+    ]);
+
+    // ─── 16. Additional tasks with assignee for "Tasks Assigned to Me" ───
+    // These tasks are assigned to a demo admin user so they show up in the assigned tasks view
+    const additionalTasks = await Task.insertMany([
+      {
+        name: "Review HVAC design specifications",
+        description: "Review and approve the final HVAC system design before procurement",
+        status: "inprogress", projectId: projects[0]._id, spaceId: space._id,
+        startDate: new Date("2025-04-01"), dueDate: new Date(new Date().getTime() + 2 * 86400000),
+        priority: "high", progress: 50, type: "task",
+        assignee: { name: "Admin User", email: "admin@opalshire.com" },
+      },
+      {
+        name: "Approve conference center renovation budget",
+        description: "Review contractor bids and approve the final renovation budget allocation",
+        status: "todo", projectId: projects[1]._id, spaceId: space._id,
+        startDate: new Date("2025-05-01"), dueDate: new Date(new Date().getTime() - 1 * 86400000),
+        priority: "high", type: "task",
+        assignee: { name: "Admin User", email: "admin@opalshire.com" },
+      },
+      {
+        name: "Inspect security camera installation progress",
+        description: "On-site inspection of newly installed CCTV cameras for quality assurance",
+        status: "todo", projectId: projects[2]._id, spaceId: space._id,
+        startDate: new Date("2025-04-15"), dueDate: new Date(new Date().getTime() + 0 * 86400000),
+        priority: "medium", type: "task",
+        assignee: { name: "Admin User", email: "admin@opalshire.com" },
+      },
+      {
+        name: "Prepare monthly project status report",
+        description: "Compile status updates from all three active projects for management review",
+        status: "todo", projectId: projects[0]._id, spaceId: space._id,
+        startDate: new Date("2025-04-20"), dueDate: new Date(new Date().getTime() + 5 * 86400000),
+        priority: "medium", type: "task",
+        assignee: { name: "Admin User", email: "admin@opalshire.com" },
+      },
+    ]);
+
+    // Link additional tasks to projects
+    await Project.findByIdAndUpdate(projects[0]._id, { $push: { tasks: { $each: [additionalTasks[0]._id, additionalTasks[3]._id] } } });
+    await Project.findByIdAndUpdate(projects[1]._id, { $push: { tasks: additionalTasks[1]._id } });
+    await Project.findByIdAndUpdate(projects[2]._id, { $push: { tasks: additionalTasks[2]._id } });
+
     return res.status(200).json({
       success: true,
       message: "Seed data created successfully",
@@ -656,7 +710,7 @@ export default async function handler(req, res) {
         buildings: buildings.length,
         facilitySpaces: facilitySpaces.length,
         assets: assets.length,
-        equipment: 6,
+        equipment: 6 + projectEquipment.length,
         teams: 8,
         budgets: 3,
         workOrders: 5,
@@ -666,7 +720,8 @@ export default async function handler(req, res) {
         hsseAudits: 1,
         emergencyPlans: 1,
         projects: projects.length,
-        tasks: tasks.length,
+        tasks: tasks.length + additionalTasks.length,
+        projectEquipment: projectEquipment.length,
       },
     });
   } catch (error) {

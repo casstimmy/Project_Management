@@ -172,7 +172,7 @@ const handleAddTask = async (newTask) => {
         )}
 
         {activeView === "reports" && (
-          <WeeklyReport reports={project.reports || []} />
+          <WeeklyReport project={project} />
         )}
       </div>
 

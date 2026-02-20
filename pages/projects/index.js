@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Layout from "@/components/MainLayout/Layout";
+import Loader from "@/components/Loader";
 import {
   PageHeader, StatCard, Button, Modal, FormField, Input, Select, Textarea,
 } from "@/components/ui/SharedComponents";
@@ -148,9 +149,7 @@ export default function ProjectsPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-          </div>
+          <Loader text="Loading projects..." />
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <FolderKanban size={48} className="mx-auto mb-3 opacity-50" />

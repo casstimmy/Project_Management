@@ -45,6 +45,7 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
         condition,
         imageUrl,
         checked: false,
+        projectId: projectId || undefined,
       };
 
       let savedItem;

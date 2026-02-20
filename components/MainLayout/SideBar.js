@@ -8,6 +8,7 @@ import {
   ChevronRight, MapPin, Layers, Bell, Gauge,
   FolderKanban, Settings, ListChecks, CalendarDays,
 } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
 
 /* ── Full nav registry ── */
 const allSections = [
@@ -83,10 +84,18 @@ export default function Sidebar({ user }) {
   const [expanded, setExpanded] = useState({});
   const [collapsed, setCollapsed] = useState(false);
   const [appMode, setAppMode] = useState("admin");
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     const mode = localStorage.getItem("appMode") || "admin";
     setAppMode(mode);
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserRole(decoded.role);
+      }
+    } catch {}
   }, []);
 
   // Filter sections by current mode
@@ -208,6 +217,7 @@ export default function Sidebar({ user }) {
             {appMode === "fm" ? "Facility Management" : "Project Management"}
           </div>
         )}
+        {userRole === "admin" && (
         <Link
           href="/admin/settings"
           className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition group ${
@@ -222,6 +232,7 @@ export default function Sidebar({ user }) {
           />
           {!collapsed && <span>Settings</span>}
         </Link>
+        )}
         {!collapsed && (
           <div className="flex items-center gap-2 text-xs text-gray-400 px-2.5">
             <Gauge size={14} />

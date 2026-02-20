@@ -1,171 +1,140 @@
 // components/project/BudgetVsActual.js
-import { useState } from "react";
+import { useMemo } from "react";
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  CartesianGrid,
-  LabelList,
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
+  ResponsiveContainer, CartesianGrid, Cell, PieChart, Pie,
 } from "recharts";
 
-export default function BudgetVsActual() {
-  const [view, setView] = useState("bar"); // "bar" | "line"
-  const [filter, setFilter] = useState("month"); // "day" | "week" | "month"
+const COLORS = ["#3B82F6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#EC4899", "#F97316"];
 
-  // Static datasets
-  const datasets = {
-    day: [
-      { name: "Mon", budget: 800, actual: 750 },
-      { name: "Tue", budget: 900, actual: 870 },
-      { name: "Wed", budget: 700, actual: 720 },
-      { name: "Thu", budget: 850, actual: 830 },
-      { name: "Fri", budget: 950, actual: 910 },
-    ],
-    week: [
-      { name: "Week 1", budget: 3200, actual: 3000 },
-      { name: "Week 2", budget: 3500, actual: 3400 },
-      { name: "Week 3", budget: 3700, actual: 3600 },
-      { name: "Week 4", budget: 4000, actual: 3900 },
-    ],
-    month: [
-      { name: "Jan", budget: 4000, actual: 3800 },
-      { name: "Feb", budget: 4200, actual: 4100 },
-      { name: "Mar", budget: 4600, actual: 3900 },
-      { name: "Apr", budget: 4800, actual: 4700 },
-      { name: "May", budget: 5000, actual: 5200 },
-    ],
-  };
+export default function BudgetVsActual({ data = [] }) {
+  const budget = Array.isArray(data) ? data : [];
 
-  const data = datasets[filter];
+  const { chartData, totalBudget } = useMemo(() => {
+    const total = budget.reduce((s, b) => s + (b.amount || 0), 0);
+    const items = budget.map((b) => ({
+      name: b.category || "Uncategorized",
+      allocated: b.amount || 0,
+      percentage: total > 0 ? Math.round(((b.amount || 0) / total) * 100) : 0,
+    }));
+    return { chartData: items, totalBudget: total };
+  }, [budget]);
+
+  if (budget.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <p className="text-gray-400 text-sm">No budget data available for this project.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 sm:p-6 bg-gradient-to-br from-white to-gray-50 shadow-xl rounded-2xl border border-gray-100 w-full">
-      {/* Title + Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
-            Budget vs Actual
-          </h2>
-          <p className="text-sm text-gray-500">
-            Track how actual spending compares to your planned budget.
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-sm text-gray-500 mb-1">Total Project Budget</p>
+          <p className="text-2xl font-bold text-gray-900">₦{totalBudget.toLocaleString()}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-sm text-gray-500 mb-1">Budget Categories</p>
+          <p className="text-2xl font-bold text-blue-600">{budget.length}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-sm text-gray-500 mb-1">Largest Category</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {chartData.length > 0 ? chartData.reduce((a, b) => a.allocated > b.allocated ? a : b).name : "—"}
           </p>
         </div>
-
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 w-full sm:w-auto">
-          {/* Filter Buttons */}
-          <div className="flex justify-center sm:justify-start bg-gray-100 border-2 border-gray-200 rounded-lg p-1">
-            {["day", "week", "month"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition ${
-                  filter === f
-                    ? "bg-green-600 text-white shadow"
-                    : "text-gray-600 hover:bg-green-100 hover:text-green-600"
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* Chart Toggle */}
-          <div className="flex justify-center sm:justify-start gap-2">
-            <button
-              onClick={() => setView("bar")}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition ${
-                view === "bar"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "text-gray-600 hover:bg-indigo-100 hover:text-indigo-600"
-              }`}
-            >
-              Bar
-            </button>
-            <button
-              onClick={() => setView("line")}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition ${
-                view === "line"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "text-gray-600 hover:bg-indigo-100 hover:text-indigo-600"
-              }`}
-            >
-              Line
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Highlight Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-indigo-50 rounded-xl p-4 text-center shadow-sm">
-          <h3 className="text-sm text-gray-600">Total Budget</h3>
-          <p className="text-lg font-bold text-indigo-600">₦22,600</p>
-        </div>
-        <div className="bg-green-50 rounded-xl p-4 text-center shadow-sm">
-          <h3 className="text-sm text-gray-600">Total Actual</h3>
-          <p className="text-lg font-bold text-green-600">₦21,700</p>
-        </div>
-      </div>
-
-      {/* Chart */}
-      <div className="w-full h-[300px] sm:h-[350px]">
-        <ResponsiveContainer width="100%" height="100%">
-          {view === "bar" ? (
-            <BarChart data={data} barSize={30}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip contentStyle={{ borderRadius: "10px", border: "1px solid #eee" }} />
-              <Legend />
-              <defs>
-                <linearGradient id="budgetGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.9} />
-                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0.3} />
-                </linearGradient>
-                <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.9} />
-                  <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.3} />
-                </linearGradient>
-              </defs>
-
-              <Bar dataKey="budget" fill="url(#budgetGradient)" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="budget" position="top" fontSize={10} />
-              </Bar>
-              <Bar dataKey="actual" fill="url(#actualGradient)" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="actual" position="top" fontSize={10} />
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Bar Chart */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Budget Allocation by Category</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData} barSize={36}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-15} textAnchor="end" height={60} />
+              <YAxis tickFormatter={(v) => `₦${(v / 1000000).toFixed(1)}M`} />
+              <Tooltip formatter={(v) => [`₦${Number(v).toLocaleString()}`, "Amount"]} />
+              <Bar dataKey="allocated" radius={[4, 4, 0, 0]}>
+                {chartData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
               </Bar>
             </BarChart>
-          ) : (
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip contentStyle={{ borderRadius: "10px", border: "1px solid #eee" }} />
+          </ResponsiveContainer>
+        </div>
+
+        {/* Pie Chart */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Budget Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie data={chartData} dataKey="allocated" nameKey="name"
+                cx="50%" cy="50%" outerRadius={100}
+                label={({ name, percentage }) => `${name} (${percentage}%)`}>
+                {chartData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v) => `₦${Number(v).toLocaleString()}`} />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="budget"
-                stroke="#8884d8"
-                strokeWidth={3}
-                dot={{ r: 4, fill: "#8884d8" }}
-              />
-              <Line
-                type="monotone"
-                dataKey="actual"
-                stroke="#06e63eb2"
-                strokeWidth={3}
-                dot={{ r: 4, fill: "#06e63eb2" }}
-              />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Budget Items Table */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Amount</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">% of Total</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Distribution</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {chartData.map((item, i) => (
+              <tr key={i} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="text-sm font-medium text-gray-900">{item.name}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
+                  ₦{item.allocated.toLocaleString()}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                  {item.percentage}%
+                </td>
+                <td className="px-4 py-3">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full" style={{
+                      width: `${item.percentage}%`,
+                      backgroundColor: COLORS[i % COLORS.length],
+                    }} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-gray-50 border-t border-gray-200">
+            <tr>
+              <td className="px-4 py-3 text-sm font-bold text-gray-900">Total</td>
+              <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                ₦{totalBudget.toLocaleString()}
+              </td>
+              <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">100%</td>
+              <td className="px-4 py-3" />
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   );

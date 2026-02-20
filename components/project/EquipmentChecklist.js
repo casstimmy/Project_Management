@@ -1,25 +1,32 @@
 // components/project/EquipmentChecklist.js
 import { useState, useEffect } from "react";
 import EquipmentForm from "./EquipmentForm";
+import Loader from "@/components/Loader";
 
 export default function EquipmentChecklist({ project }) {
   const [list, setList] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchList = async () => {
     try {
-      const res = await fetch("/api/equipment");
+      const url = project?._id
+        ? `/api/equipment?projectId=${project._id}`
+        : "/api/equipment";
+      const res = await fetch(url);
       const data = await res.json();
-      setList(data);
+      setList(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch equipment:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchList();
-  }, [project._Id]);
+  }, [project?._id]);
 
   const toggleCheck = async (id, current) => {
     try {
@@ -38,19 +45,21 @@ export default function EquipmentChecklist({ project }) {
   return (
     <div className="p-6 min-h-screen bg-gray-50">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Equipment Checklist</h2>
+        <h2 className="text-lg font-bold text-gray-800">Equipment Checklist</h2>
         <button
           onClick={() => {
             setEditingItem(null);
             setShowModal(true);
           }}
-          className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition"
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow hover:bg-blue-700 transition"
         >
           + Add Equipment
         </button>
       </div>
 
-      {list.length === 0 ? (
+      {loading ? (
+        <Loader text="Loading equipment..." />
+      ) : list.length === 0 ? (
         <p className="text-gray-600 text-center text-lg animate-pulse">
           No equipment added yet...
         </p>
@@ -138,7 +147,7 @@ export default function EquipmentChecklist({ project }) {
               ×
             </button>
             <EquipmentForm
-              projectId={project._Id}
+              projectId={project?._id}
               _id={editingItem?._id}
               onSave={(savedItem) => {
                 setList((prev) => {

@@ -1,5 +1,6 @@
 // /models/Equipment.js
-import mongoose, { Schema, models } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, models } = mongoose;
 
 const EquipmentSchema = new Schema(
   {
@@ -12,6 +13,7 @@ const EquipmentSchema = new Schema(
     },
     imageUrl: { type: String, default: "" },
     checked: { type: Boolean, default: false },
+    projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
   },
   { timestamps: true }
 );

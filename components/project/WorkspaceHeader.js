@@ -1,14 +1,17 @@
 // components/Projects/WorkspaceHeader.js
+import { useRouter } from "next/router";
 import {
   List,
   Layout,
-  Plus,
   ClipboardCheck,
   BarChart2,
   FileText,
+  ArrowLeft,
 } from "lucide-react";
 
 export default function WorkspaceHeader({ project, activeView, onChangeView }) {
+  const router = useRouter();
+
   const navItems = [
     { id: "board", label: "Board", icon: Layout },
     { id: "list", label: "List & Calendar", icon: List },
@@ -19,46 +22,57 @@ export default function WorkspaceHeader({ project, activeView, onChangeView }) {
   ];
 
   return (
-    <div className="border-b px-4 py-4 flex flex-col md:flex-row md:items-center justify-between md:gap-0">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold text-gray-800">
+    <div className="border-b border-gray-200 bg-white px-4 py-3">
+      {/* Top row: back button + project title */}
+      <div className="flex items-center gap-3 mb-3">
+        <button
+          onClick={() => router.push("/projects")}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition px-2.5 py-1.5 rounded-lg hover:bg-blue-50"
+        >
+          <ArrowLeft size={16} />
+          <span className="hidden sm:inline">All Projects</span>
+        </button>
+        <div className="h-5 w-px bg-gray-200" />
+        <h1 className="text-lg font-bold text-gray-800 truncate">
           {project?.title || "Workspace"}
         </h1>
-        <div className="hidden md:flex items-center gap-3 flex-wrap">
-          {navItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => onChangeView(id)}
-              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200
-                ${
-                  activeView === id
-                    ? "bg-indigo-600 text-white shadow-lg"
-                    : "text-gray-700 hover:text-indigo-600 hover:bg-indigo-100"
-                }
-              `}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Mobile scrollable nav */}
-      <div className="flex md:hidden overflow-x-auto gap-2 py-2">
+      {/* Desktop nav tabs */}
+      <div className="hidden md:flex items-center gap-1 flex-wrap">
         {navItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => onChangeView(id)}
-            className={`flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
               ${
                 activeView === id
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "text-gray-700 hover:text-indigo-600 hover:bg-indigo-100"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
               }
             `}
           >
-            <Icon size={16} />
+            <Icon size={15} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Mobile scrollable nav */}
+      <div className="flex md:hidden overflow-x-auto gap-1.5 py-1 -mx-1 px-1">
+        {navItems.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => onChangeView(id)}
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
+              ${
+                activeView === id
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+              }
+            `}
+          >
+            <Icon size={15} />
             {label}
           </button>
         ))}

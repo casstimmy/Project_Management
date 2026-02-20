@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   try {
     /** -------------------- GET -------------------- */
     if (method === "GET") {
-      const { id, search } = req.query;
+      const { id, search, projectId } = req.query;
 
       if (id) {
         const item = await Equipment.findById(id);
@@ -18,18 +18,19 @@ export default async function handler(req, res) {
         return res.json(item);
       }
 
+      // Build filter
+      const filter = {};
+      if (projectId) filter.projectId = projectId;
+
       if (search) {
-        const items = await Equipment.find({
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { condition: { $regex: search, $options: "i" } },
-            { details: { $regex: search, $options: "i" } },
-          ],
-        }).limit(10);
-        return res.json(items);
+        filter.$or = [
+          { name: { $regex: search, $options: "i" } },
+          { condition: { $regex: search, $options: "i" } },
+          { details: { $regex: search, $options: "i" } },
+        ];
       }
 
-      const items = await Equipment.find();
+      const items = await Equipment.find(filter);
       return res.json(items);
     }
 
@@ -47,6 +48,7 @@ export default async function handler(req, res) {
         condition,
         imageUrl,
         checked,
+        projectId: req.body.projectId || undefined,
       });
 
       return res.status(201).json(item);
