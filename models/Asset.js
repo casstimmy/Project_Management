@@ -9,7 +9,7 @@ const AssetSchema = new Schema(
 
     // Identity
     name: { type: String, required: true, trim: true },
-    assetTag: { type: String, unique: true, trim: true }, // Auto-generated
+    assetTag: { type: String, unique: true, sparse: true, trim: true }, // Auto-generated
     description: { type: String, default: "" },
     category: {
       type: String,
@@ -119,7 +119,6 @@ AssetSchema.index({ building: 1 });
 AssetSchema.index({ facilitySpace: 1 });
 AssetSchema.index({ category: 1 });
 AssetSchema.index({ status: 1 });
-AssetSchema.index({ assetTag: 1 });
 AssetSchema.index({ maintenanceStrategy: 1 });
 AssetSchema.index({ replacementDueDate: 1 });
 

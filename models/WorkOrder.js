@@ -9,7 +9,7 @@ const WorkOrderSchema = new Schema(
     building: { type: Schema.Types.ObjectId, ref: "Building" },
 
     // Identity
-    workOrderNumber: { type: String, unique: true },
+    workOrderNumber: { type: String, unique: true, sparse: true },
     title: { type: String, required: true },
     description: { type: String, default: "" },
 
@@ -102,6 +102,5 @@ WorkOrderSchema.index({ status: 1 });
 WorkOrderSchema.index({ priority: 1 });
 WorkOrderSchema.index({ assignedToId: 1 });
 WorkOrderSchema.index({ scheduledDate: 1 });
-WorkOrderSchema.index({ workOrderNumber: 1 });
 
 export default models.WorkOrder || mongoose.model("WorkOrder", WorkOrderSchema);

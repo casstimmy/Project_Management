@@ -1,4 +1,5 @@
 // pages/api/seed/index.js
+import mongoose from "mongoose";
 import { mongooseConnect } from "@/lib/mongoose";
 import Site from "@/models/Site";
 import Building from "@/models/Building";
@@ -43,6 +44,17 @@ export default async function handler(req, res) {
       Space.deleteMany({}),
       Project.deleteMany({}),
       Task.deleteMany({}),
+    ]);
+
+    // Drop stale unique indexes that may conflict
+    const db = mongoose.connection.db;
+    const dropIndex = async (col, idx) => {
+      try { await db.collection(col).dropIndex(idx); } catch {}
+    };
+    await Promise.all([
+      dropIndex("assets", "assetTag_1"),
+      dropIndex("workorders", "workOrderNumber_1"),
+      dropIndex("sites", "code_1"),
     ]);
 
     // ─── 1. Sites ───
