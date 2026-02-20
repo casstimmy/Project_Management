@@ -36,6 +36,7 @@ export default function Nav({ children }) {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("appMode");
     router.push("/");
   };
 

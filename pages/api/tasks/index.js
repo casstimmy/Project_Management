@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   if (method === "POST") {
     try {
-      const { projectId, name, description, status, assignee, dueDate, priority, type } = req.body;
+      const { projectId, name, description, status, assignee, startDate, dueDate, priority, type } = req.body;
 
       // 1️⃣ Create Task
       const newTask = await Task.create({
@@ -30,7 +30,8 @@ export default async function handler(req, res) {
         description,
         status,
         assignee,
-        dueDate,
+        startDate: startDate || new Date(),
+        dueDate: dueDate || new Date(),
         priority,
         type,
       });

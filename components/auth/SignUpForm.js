@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useRouter } from "next/router"; // Import useRouter
+import { useRouter } from "next/router";
 
 function AdminSignUpForm() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,6 +15,7 @@ function AdminSignUpForm() {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setIsCreatingAdmin(true);
 
     try {
       const res = await fetch("/api/auth/create-admin", {
@@ -30,77 +31,80 @@ function AdminSignUpForm() {
         return;
       }
 
-      setSuccess("Admin account created successfully.");
-
-      // Redirect to login after short delay
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 1000); // 1 second delay for user to see success message
-    } catch (err) {
-      console.error("Error during registration:", err);
+      setSuccess("Admin account created successfully. Redirecting...");
+      setTimeout(() => router.push("/"), 1200);
+    } catch {
       setError("Something went wrong");
+    } finally {
+      setIsCreatingAdmin(false);
     }
   }
 
   return (
-    <form
-      onSubmit={handleRegister}
-      className="space-y-4 max-w-md mx-auto mt-10"
-    >
-      <h1 className="text-2xl font-bold text-center">Create Admin</h1>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      {success && <p className="text-green-600 text-sm">{success}</p>}
+    <form onSubmit={handleRegister} className="space-y-4">
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm px-4 py-2.5 rounded-lg border border-red-100">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="bg-emerald-50 text-emerald-600 text-sm px-4 py-2.5 rounded-lg border border-emerald-100">
+          {success}
+        </div>
+      )}
 
-      <input
-        type="text"
-        placeholder="Full Name"
-        className="w-full border px-4 py-2 rounded"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+        <input
+          type="text"
+          placeholder="John Doe"
+          className="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+      </div>
 
-      <input
-        type="email"
-        placeholder="Email"
-        className="w-full border px-4 py-2 rounded"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
+        <input
+          type="email"
+          placeholder="admin@company.com"
+          className="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="w-full border px-4 py-2 rounded"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+        <input
+          type="password"
+          placeholder="Create a strong password"
+          className="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
 
       <button
-        onClick={async () => {
-          setIsCreatingAdmin(true);
-          try {
-            await handleCreateAdmin(); // your admin creation logic
-          } finally {
-            setIsCreatingAdmin(false);
-          }
-        }}
+        type="submit"
         disabled={isCreatingAdmin}
-        className={`w-full flex items-center justify-center gap-2 py-2 rounded transition duration-300 ${
+        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
           isCreatingAdmin
             ? "bg-blue-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700"
+            : "bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/20 hover:shadow-md hover:shadow-blue-600/25"
         } text-white`}
       >
         {isCreatingAdmin ? (
           <>
-            <span className="loader w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"></span>
-            Creating...
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Creating Admin...
           </>
         ) : (
-          "Create Admin"
+          "Create Admin Account"
         )}
       </button>
     </form>

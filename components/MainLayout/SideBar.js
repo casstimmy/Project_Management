@@ -1,23 +1,26 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Building2, Package, ClipboardCheck,
   ShieldCheck, AlertTriangle, Wrench, CalendarClock,
   DollarSign, FileText, Users, ChevronDown,
   ChevronRight, MapPin, Layers, Bell, Gauge,
-  FolderKanban, Settings,
+  FolderKanban, Settings, ListChecks, CalendarDays,
 } from "lucide-react";
 
-const navSections = [
+/* ── Full nav registry ── */
+const allSections = [
   {
     title: "OVERVIEW",
+    modes: ["admin", "fm", "pm"],
     items: [
       { href: "/homePage", label: "Dashboard", icon: LayoutDashboard },
     ],
   },
   {
     title: "FACILITY MANAGEMENT",
+    modes: ["admin", "fm"],
     items: [
       {
         label: "Locations",
@@ -34,6 +37,7 @@ const navSections = [
   },
   {
     title: "SAFETY & COMPLIANCE",
+    modes: ["admin", "fm"],
     items: [
       { href: "/hsse", label: "HSSE Audit", icon: ShieldCheck },
       { href: "/incidents", label: "Incidents", icon: AlertTriangle },
@@ -42,6 +46,7 @@ const navSections = [
   },
   {
     title: "MAINTENANCE",
+    modes: ["admin", "fm"],
     items: [
       { href: "/maintenance", label: "Maintenance Plans", icon: CalendarClock },
       { href: "/workorders", label: "Work Orders", icon: Wrench },
@@ -49,18 +54,23 @@ const navSections = [
   },
   {
     title: "PROJECT MANAGEMENT",
+    modes: ["admin", "fm", "pm"],
     items: [
       { href: "/projects", label: "Projects", icon: FolderKanban },
+      { href: "/myTask/assigned", label: "My Tasks", icon: ListChecks },
+      { href: "/myTask/today&Overdue", label: "Today & Overdue", icon: CalendarDays },
     ],
   },
   {
     title: "FINANCE",
+    modes: ["admin", "fm"],
     items: [
       { href: "/budgets", label: "Budgets & Finance", icon: DollarSign },
     ],
   },
   {
     title: "ADMINISTRATION",
+    modes: ["admin"],
     items: [
       { href: "/manage/team", label: "Team Management", icon: Users },
       { href: "/reports", label: "Reports", icon: FileText },
@@ -72,6 +82,15 @@ export default function Sidebar({ user }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState({});
   const [collapsed, setCollapsed] = useState(false);
+  const [appMode, setAppMode] = useState("admin");
+
+  useEffect(() => {
+    const mode = localStorage.getItem("appMode") || "admin";
+    setAppMode(mode);
+  }, []);
+
+  // Filter sections by current mode
+  const navSections = allSections.filter((s) => s.modes.includes(appMode));
 
   const toggleExpand = (label) => {
     setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -82,7 +101,7 @@ export default function Sidebar({ user }) {
 
   return (
     <aside
-      className={`${collapsed ? "w-[68px]" : "w-64"} bg-white border-r border-gray-200 h-[calc(100vh-3.5rem)] flex flex-col transition-all duration-200`}
+      className={`${collapsed ? "w-[68px]" : "w-64"} bg-white border-r border-gray-200 h-[calc(100vh-3.5rem)] flex flex-col transition-all duration-200 sticky top-14`}
     >
       {/* Collapse toggle */}
       <div className={`flex items-center ${collapsed ? "justify-center" : "justify-end"} px-3 pt-3`}>
@@ -95,8 +114,8 @@ export default function Sidebar({ user }) {
         </button>
       </div>
 
-      {/* Navigation - fixed, no scroll */}
-      <nav className="flex-1 px-3 py-2 space-y-4 overflow-hidden">
+      {/* Navigation — this scrolls independently of main content */}
+      <nav className="flex-1 px-3 py-2 space-y-4 overflow-y-auto scrollbar-thin">
         {navSections.map((section) => (
           <div key={section.title}>
             {!collapsed && (
@@ -179,8 +198,16 @@ export default function Sidebar({ user }) {
         ))}
       </nav>
 
-      {/* Footer with Settings */}
+      {/* Mode badge + Footer */}
       <div className="border-t border-gray-100 px-3 py-3 space-y-2">
+        {!collapsed && appMode !== "admin" && (
+          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium ${
+            appMode === "fm" ? "bg-blue-50 text-blue-600" : "bg-indigo-50 text-indigo-600"
+          }`}>
+            {appMode === "fm" ? <Building2 size={14} /> : <FolderKanban size={14} />}
+            {appMode === "fm" ? "Facility Management" : "Project Management"}
+          </div>
+        )}
         <Link
           href="/admin/settings"
           className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition group ${
