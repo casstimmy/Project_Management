@@ -25,6 +25,26 @@ export default async function handler(req, res) {
   await mongooseConnect();
 
   try {
+    // ─── 0. Clear existing seed data for a clean re-seed ───
+    await Promise.all([
+      Site.deleteMany({}),
+      Building.deleteMany({}),
+      FacilitySpace.deleteMany({}),
+      Asset.deleteMany({}),
+      Equipment.deleteMany({}),
+      Team.deleteMany({}),
+      Budget.deleteMany({}),
+      WorkOrder.deleteMany({}),
+      MaintenancePlan.deleteMany({}),
+      Incident.deleteMany({}),
+      FCAAssessment.deleteMany({}),
+      HSSEAudit.deleteMany({}),
+      EmergencyPlan.deleteMany({}),
+      Space.deleteMany({}),
+      Project.deleteMany({}),
+      Task.deleteMany({}),
+    ]);
+
     // ─── 1. Sites ───
     const sites = await Site.insertMany([
       {

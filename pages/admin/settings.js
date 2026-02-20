@@ -417,7 +417,7 @@ export default function SettingsPage() {
                 <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-amber-800">
                   <p className="font-medium">Full System Seed</p>
-                  <p className="mt-1">This will create demo data for: Sites, Buildings, Spaces, Assets, Equipment (global + project-scoped), Work Orders, Maintenance Plans, Budgets, Incidents, HSSE Audits, FCA Assessments, Emergency Plans, Projects, Tasks (including tasks assigned to admin@opalshire.com), and Teams. All data is interlinked. Existing records are preserved.</p>
+                  <p className="mt-1">This will <strong>clear and re-create</strong> demo data for: Sites, Buildings, Spaces, Assets, Equipment (global + project-scoped), Work Orders, Maintenance Plans, Budgets, Incidents, HSSE Audits, FCA Assessments, Emergency Plans, Projects, Tasks (including tasks assigned to admin@opalshire.com), and Teams. All data is interlinked. User accounts are preserved.</p>
                 </div>
               </div>
             </div>

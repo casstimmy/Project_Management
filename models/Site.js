@@ -33,7 +33,6 @@ const SiteSchema = new Schema(
 );
 
 SiteSchema.index({ name: 1 });
-SiteSchema.index({ code: 1 });
 SiteSchema.index({ status: 1 });
 
 export default models.Site || mongoose.model("Site", SiteSchema);
