@@ -155,6 +155,7 @@ export default function TeamForm({ _id }) {
             </label>
           ) : (
             <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-md">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={image || URL.createObjectURL(file)}
                 alt="Preview"

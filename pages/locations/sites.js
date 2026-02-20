@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/MainLayout/Layout";
 import {
@@ -24,7 +24,7 @@ export default function SitesPage() {
     address: { street: "", city: "", state: "", country: "", postalCode: "" },
   });
 
-  const fetchSites = async () => {
+  const fetchSites = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/sites?search=${search}`);
@@ -35,9 +35,9 @@ export default function SitesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
 
-  useEffect(() => { fetchSites(); }, [search]);
+  useEffect(() => { fetchSites(); }, [fetchSites]);
 
   const handleSubmit = async () => {
     if (!form.name) return toast.error("Site name is required");

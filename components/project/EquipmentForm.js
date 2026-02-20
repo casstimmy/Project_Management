@@ -148,6 +148,7 @@ export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
             </label>
           ) : (
             <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-md group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={preview}
                 alt="Preview"

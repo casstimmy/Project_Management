@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
@@ -39,7 +39,7 @@ export default function BudgetsPage() {
     lineItems: [{ description: "", category: "", budgeted: 0, actual: 0 }],
   });
 
-  const fetchBudgets = async () => {
+  const fetchBudgets = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/budgets?${search ? `search=${search}` : ""}`);
@@ -47,9 +47,9 @@ export default function BudgetsPage() {
       setBudgets(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search]);
 
-  useEffect(() => { fetchBudgets(); }, [search]);
+  useEffect(() => { fetchBudgets(); }, [fetchBudgets]);
 
   const resetForm = () => setForm({
     title: "", budgetType: "OPEX", fiscalYear: new Date().getFullYear().toString(),

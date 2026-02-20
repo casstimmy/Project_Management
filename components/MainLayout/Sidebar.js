@@ -177,7 +177,7 @@ export default function Sidebar({ user }) {
         <div className="border-t border-gray-100 px-4 py-3">
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Gauge size={14} />
-            <span>OPAL FMS v1.0</span>
+            <span>OPAL shire v1.0</span>
           </div>
         </div>
       )}

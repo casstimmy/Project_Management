@@ -63,6 +63,7 @@ export default function EquipmentChecklist({ project }) {
             >
               {/* Image */}
               {item.imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={item.imageUrl}
                   alt={item.name}

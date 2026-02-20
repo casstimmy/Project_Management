@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { jwtDecode } from "jwt-decode";
-import Sidebar from "./Sidebar";
+import Sidebar from "./SideBar";
 import Link from "next/link";
 import { ROLE_LABELS } from "@/lib/constants";
 import { useTheme } from "next-themes";
@@ -51,7 +51,7 @@ export default function Nav({ children }) {
             </div>
             <div className="hidden sm:flex flex-col leading-tight">
               <span className="text-lg font-bold text-gray-900 tracking-tight">
-                OPAL <span className="text-blue-600">FMS</span>
+                OPAL <span className="text-blue-600">shire</span>
               </span>
             </div>
           </Link>

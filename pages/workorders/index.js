@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge, PriorityBadge,
@@ -48,7 +48,7 @@ export default function WorkOrdersPage() {
     fetch("/api/assets").then(r => r.json()).then(d => setAssets(d.assets || (Array.isArray(d) ? d : [])));
   }, []);
 
-  const fetchWO = async () => {
+  const fetchWO = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }), ...(statusFilter && { status: statusFilter }) });
@@ -57,9 +57,9 @@ export default function WorkOrdersPage() {
       setWorkOrders(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search, statusFilter]);
 
-  useEffect(() => { fetchWO(); }, [search, statusFilter]);
+  useEffect(() => { fetchWO(); }, [fetchWO]);
 
   const resetForm = () => setForm({
     title: "", description: "", type: "reactive", priority: "medium", status: "open",

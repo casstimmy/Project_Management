@@ -190,6 +190,7 @@ export default function GanttChartPage({ project }) {
                       render: (task) =>
                         task.assignee?.avatar ? (
                           <div className="flex items-center gap-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={task.assignee.avatar}
                               alt={task.assignee.name}

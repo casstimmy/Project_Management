@@ -70,7 +70,7 @@ export default function HomePage() {
                 Good {timeOfDay}, {user?.name ? user.name.split(" ")[0] : "Guest"}
               </h1>
               <p className="text-blue-100 mt-1 text-sm">
-                Welcome to OPAL FMS — your facility management overview
+                Welcome to OPAL shire — your facility management overview
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex items-center gap-2 text-sm text-blue-100">

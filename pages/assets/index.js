@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/MainLayout/Layout";
 import {
@@ -61,7 +61,7 @@ export default function AssetsPage() {
     }
   }, [form.site]);
 
-  const fetchAssets = async () => {
+  const fetchAssets = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }) });
@@ -70,9 +70,9 @@ export default function AssetsPage() {
       setAssets(data.assets || (Array.isArray(data) ? data : []));
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search]);
 
-  useEffect(() => { fetchAssets(); }, [search]);
+  useEffect(() => { fetchAssets(); }, [fetchAssets]);
 
   const resetForm = () => setForm({
     name: "", description: "", category: "HVAC", status: "in-service",

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
@@ -30,7 +30,7 @@ export default function EmergencyPage() {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
   }, []);
 
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/emergency?${search ? `search=${search}` : ""}`);
@@ -38,9 +38,9 @@ export default function EmergencyPage() {
       setPlans(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search]);
 
-  useEffect(() => { fetchPlans(); }, [search]);
+  useEffect(() => { fetchPlans(); }, [fetchPlans]);
 
   const resetForm = () => setForm({
     site: "", title: "", planType: "fire", status: "draft",

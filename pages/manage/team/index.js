@@ -53,6 +53,7 @@ export default function ManageTeam() {
               <div key={member._id} className="bg-white shadow-lg rounded-2xl p-5 flex flex-col items-center text-center">
                 <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 mb-4">
                   {member.image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={member.image} alt={member.name} className="w-full h-full object-cover"/>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400"><User size={32}/></div>

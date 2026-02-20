@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge, PriorityBadge,
@@ -43,7 +43,7 @@ export default function IncidentsPage() {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
   }, []);
 
-  const fetchIncidents = async () => {
+  const fetchIncidents = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }) });
@@ -52,9 +52,9 @@ export default function IncidentsPage() {
       setIncidents(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search]);
 
-  useEffect(() => { fetchIncidents(); }, [search]);
+  useEffect(() => { fetchIncidents(); }, [fetchIncidents]);
 
   const resetForm = () => setForm({
     title: "", type: "near-miss", severity: "minor", status: "reported",

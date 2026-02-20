@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/MainLayout/Layout";
 import {
@@ -26,7 +26,7 @@ export default function BuildingsPage() {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
   }, []);
 
-  const fetchBuildings = async () => {
+  const fetchBuildings = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(siteId && { siteId }), ...(search && { search }) });
@@ -35,9 +35,9 @@ export default function BuildingsPage() {
       setBuildings(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search, siteId]);
 
-  useEffect(() => { fetchBuildings(); }, [search, siteId]);
+  useEffect(() => { fetchBuildings(); }, [fetchBuildings]);
 
   const handleSubmit = async () => {
     if (!form.name || !form.siteId) return toast.error("Name and site are required");

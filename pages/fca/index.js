@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
@@ -42,7 +42,7 @@ export default function FCAPage() {
     fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
   }, []);
 
-  const fetchFCA = async () => {
+  const fetchFCA = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/fca?${search ? `search=${search}` : ""}`);
@@ -50,9 +50,9 @@ export default function FCAPage() {
       setAssessments(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search]);
 
-  useEffect(() => { fetchFCA(); }, [search]);
+  useEffect(() => { fetchFCA(); }, [fetchFCA]);
 
   const resetForm = () => setForm({
     building: "", assessmentDate: "", assessor: "", status: "draft",

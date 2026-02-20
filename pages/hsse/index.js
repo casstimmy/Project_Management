@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
@@ -42,7 +42,7 @@ export default function HSSEPage() {
     fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
   }, []);
 
-  const fetchAudits = async () => {
+  const fetchAudits = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/hsse?${search ? `search=${search}` : ""}`);
@@ -50,9 +50,9 @@ export default function HSSEPage() {
       setAudits(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [search]);
 
-  useEffect(() => { fetchAudits(); }, [search]);
+  useEffect(() => { fetchAudits(); }, [fetchAudits]);
 
   const resetForm = () => setForm({
     site: "", building: "", auditType: "routine", auditDate: "",
