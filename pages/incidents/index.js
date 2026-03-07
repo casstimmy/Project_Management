@@ -34,9 +34,9 @@ export default function IncidentsPage() {
   const [form, setForm] = useState({
     title: "", type: "near-miss", severity: "minor", status: "reported",
     site: "", building: "", location: "",
-    dateOccurred: "", description: "", immediateActions: "",
+    incidentDate: "", reportedBy: "", description: "", immediateAction: "",
     personsInvolved: "", witnesses: "",
-    rootCause: "", correctiveActions: "", preventiveActions: "",
+    rootCause: "", correctiveAction: "", preventiveAction: "",
   });
 
   useEffect(() => {
@@ -59,9 +59,9 @@ export default function IncidentsPage() {
   const resetForm = () => setForm({
     title: "", type: "near-miss", severity: "minor", status: "reported",
     site: "", building: "", location: "",
-    dateOccurred: "", description: "", immediateActions: "",
+    incidentDate: "", reportedBy: "", description: "", immediateAction: "",
     personsInvolved: "", witnesses: "",
-    rootCause: "", correctiveActions: "", preventiveActions: "",
+    rootCause: "", correctiveAction: "", preventiveAction: "",
   });
 
   const handleSubmit = async () => {
@@ -91,12 +91,13 @@ export default function IncidentsPage() {
       title: inc.title, type: inc.type, severity: inc.severity, status: inc.status,
       site: inc.site?._id || "", building: inc.building?._id || "",
       location: inc.location || "",
-      dateOccurred: inc.dateOccurred?.split("T")[0] || "",
-      description: inc.description || "", immediateActions: inc.immediateActions || "",
+      incidentDate: inc.incidentDate?.split("T")[0] || "",
+      reportedBy: inc.reportedBy || "",
+      description: inc.description || "", immediateAction: inc.immediateAction || "",
       personsInvolved: inc.personsInvolved || "", witnesses: inc.witnesses || "",
-      rootCause: inc.investigation?.rootCause || "",
-      correctiveActions: inc.investigation?.correctiveActions || "",
-      preventiveActions: inc.investigation?.preventiveActions || "",
+      rootCause: inc.rootCause || "",
+      correctiveAction: inc.correctiveAction || "",
+      preventiveAction: inc.preventiveAction || "",
     });
     setShowModal(true);
   };
@@ -115,7 +116,7 @@ export default function IncidentsPage() {
         </div>
         <div>
           <p className="font-medium text-gray-900">{row.title}</p>
-          <p className="text-xs text-gray-400">{row.dateOccurred ? new Date(row.dateOccurred).toLocaleDateString() : "—"}</p>
+          <p className="text-xs text-gray-400">{row.incidentDate ? new Date(row.incidentDate).toLocaleDateString() : "—"}</p>
         </div>
       </div>
     )},
@@ -179,10 +180,13 @@ export default function IncidentsPage() {
                 placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
             </FormField>
             <FormField label="Date Occurred">
-              <Input type="date" value={form.dateOccurred} onChange={(e) => setForm({ ...form, dateOccurred: e.target.value })} />
+              <Input type="date" value={form.incidentDate} onChange={(e) => setForm({ ...form, incidentDate: e.target.value })} />
             </FormField>
             <FormField label="Location / Area">
               <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Specific location" />
+            </FormField>
+            <FormField label="Reported By" required>
+              <Input value={form.reportedBy} onChange={(e) => setForm({ ...form, reportedBy: e.target.value })} placeholder="Name of person reporting" />
             </FormField>
             <FormField label="Status">
               <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
@@ -192,16 +196,16 @@ export default function IncidentsPage() {
               <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detailed description of what happened" />
             </FormField>
             <FormField label="Immediate Actions Taken" className="md:col-span-2">
-              <Textarea rows={2} value={form.immediateActions} onChange={(e) => setForm({ ...form, immediateActions: e.target.value })} />
+              <Textarea rows={2} value={form.immediateAction} onChange={(e) => setForm({ ...form, immediateAction: e.target.value })} />
             </FormField>
             <FormField label="Root Cause" className="md:col-span-2">
               <Textarea rows={2} value={form.rootCause} onChange={(e) => setForm({ ...form, rootCause: e.target.value })} />
             </FormField>
             <FormField label="Corrective Actions">
-              <Textarea rows={2} value={form.correctiveActions} onChange={(e) => setForm({ ...form, correctiveActions: e.target.value })} />
+              <Textarea rows={2} value={form.correctiveAction} onChange={(e) => setForm({ ...form, correctiveAction: e.target.value })} />
             </FormField>
             <FormField label="Preventive Actions">
-              <Textarea rows={2} value={form.preventiveActions} onChange={(e) => setForm({ ...form, preventiveActions: e.target.value })} />
+              <Textarea rows={2} value={form.preventiveAction} onChange={(e) => setForm({ ...form, preventiveAction: e.target.value })} />
             </FormField>
           </div>
         </Modal>
@@ -221,7 +225,7 @@ export default function IncidentsPage() {
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500">Date</p>
-                  <p className="font-semibold text-sm">{showDetail.dateOccurred ? new Date(showDetail.dateOccurred).toLocaleDateString() : "—"}</p>
+                  <p className="font-semibold text-sm">{showDetail.incidentDate ? new Date(showDetail.incidentDate).toLocaleDateString() : "—"}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500">Status</p>
@@ -234,16 +238,16 @@ export default function IncidentsPage() {
                   <p className="text-sm text-gray-600">{showDetail.description}</p>
                 </div>
               )}
-              {showDetail.immediateActions && (
+              {showDetail.immediateAction && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-1">Immediate Actions</h4>
-                  <p className="text-sm text-gray-600">{showDetail.immediateActions}</p>
+                  <p className="text-sm text-gray-600">{showDetail.immediateAction}</p>
                 </div>
               )}
-              {showDetail.investigation?.rootCause && (
+              {showDetail.rootCause && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-1">Root Cause</h4>
-                  <p className="text-sm text-gray-600">{showDetail.investigation.rootCause}</p>
+                  <p className="text-sm text-gray-600">{showDetail.rootCause}</p>
                 </div>
               )}
             </div>

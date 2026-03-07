@@ -9,6 +9,7 @@ export default function TeamForm({ _id }) {
   const router = useRouter();
 
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [type, setType] = useState("Worker");
   const [phone, setPhone] = useState("");
@@ -29,6 +30,7 @@ export default function TeamForm({ _id }) {
           const res = await axios.get(`/api/manage/team?id=${_id}`);
           const member = res.data;
           setName(member.name || "");
+          setEmail(member.email || "");
           setRole(member.role || "");
           setType(member.type || "Worker");
           setPhone(member.phone || "");
@@ -68,7 +70,7 @@ export default function TeamForm({ _id }) {
       }
     }
 
-    const data = { name, role, type, phone, notes, image: imageUrl };
+    const data = { name, email, role, type, phone, notes, image: imageUrl };
 
     try {
       if (_id) await axios.put("/api/manage/team", { ...data, _id });
@@ -99,10 +101,17 @@ export default function TeamForm({ _id }) {
 
       <div className="grid md:grid-cols-2 gap-6">
         <InputField
-          label="Full Name"
+          label="Full Name (Surname, First Name, Middle Name)"
           value={name}
           setValue={setName}
-          placeholder="Enter member name"
+          placeholder="e.g., Doe, John, Michael"
+        />
+        <InputField
+          label="Email Address"
+          value={email}
+          setValue={setEmail}
+          placeholder="Enter email address"
+          type="email"
         />
         <InputField
           label="Role"

@@ -36,7 +36,7 @@ export default function BudgetsPage() {
   const [form, setForm] = useState({
     title: "", budgetType: "OPEX", fiscalYear: new Date().getFullYear().toString(),
     site: "", costCenter: "", status: "draft", notes: "",
-    lineItems: [{ description: "", category: "", budgeted: 0, actual: 0 }],
+    lineItems: [{ description: "", category: "", budgetedAmount: 0, actualAmount: 0 }],
   });
 
   const fetchBudgets = useCallback(async () => {
@@ -54,7 +54,7 @@ export default function BudgetsPage() {
   const resetForm = () => setForm({
     title: "", budgetType: "OPEX", fiscalYear: new Date().getFullYear().toString(),
     site: "", costCenter: "", status: "draft", notes: "",
-    lineItems: [{ description: "", category: "", budgeted: 0, actual: 0 }],
+    lineItems: [{ description: "", category: "", budgetedAmount: 0, actualAmount: 0 }],
   });
 
   const handleSubmit = async () => {
@@ -79,12 +79,12 @@ export default function BudgetsPage() {
   };
 
   const addLineItem = () => {
-    setForm({ ...form, lineItems: [...form.lineItems, { description: "", category: "", budgeted: 0, actual: 0 }] });
+    setForm({ ...form, lineItems: [...form.lineItems, { description: "", category: "", budgetedAmount: 0, actualAmount: 0 }] });
   };
 
   const updateLineItem = (i, field, value) => {
     const updated = [...form.lineItems];
-    updated[i] = { ...updated[i], [field]: field === "budgeted" || field === "actual" ? Number(value) : value };
+    updated[i] = { ...updated[i], [field]: field === "budgetedAmount" || field === "actualAmount" ? Number(value) : value };
     setForm({ ...form, lineItems: updated });
   };
 
@@ -219,14 +219,14 @@ export default function BudgetsPage() {
                         options={(form.budgetType === "OPEX" ? OPEX_CATEGORIES : CAPEX_CATEGORIES).map(c => ({ value: c, label: c }))} />
                     </div>
                     <div className="col-span-2">
-                      <Input type="number" placeholder="Budgeted" value={item.budgeted} onChange={(e) => updateLineItem(i, "budgeted", e.target.value)} />
+                      <Input type="number" placeholder="Budgeted" value={item.budgetedAmount} onChange={(e) => updateLineItem(i, "budgetedAmount", e.target.value)} />
                     </div>
                     <div className="col-span-2">
-                      <Input type="number" placeholder="Actual" value={item.actual} onChange={(e) => updateLineItem(i, "actual", e.target.value)} />
+                      <Input type="number" placeholder="Actual" value={item.actualAmount} onChange={(e) => updateLineItem(i, "actualAmount", e.target.value)} />
                     </div>
                     <div className="col-span-1 text-center">
-                      <span className={`text-xs font-medium ${(item.budgeted - item.actual) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {item.budgeted - item.actual >= 0 ? "+" : ""}{(item.budgeted - item.actual).toLocaleString()}
+                      <span className={`text-xs font-medium ${(item.budgetedAmount - item.actualAmount) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {item.budgetedAmount - item.actualAmount >= 0 ? "+" : ""}{(item.budgetedAmount - item.actualAmount).toLocaleString()}
                       </span>
                     </div>
                     <div className="col-span-1 text-center">
@@ -239,8 +239,8 @@ export default function BudgetsPage() {
               </div>
 
               <div className="mt-3 flex justify-end gap-6 text-sm">
-                <span className="text-gray-500">Total Budgeted: <span className="font-semibold text-gray-900">{formatCurrency(form.lineItems.reduce((s, li) => s + li.budgeted, 0))}</span></span>
-                <span className="text-gray-500">Total Actual: <span className="font-semibold text-gray-900">{formatCurrency(form.lineItems.reduce((s, li) => s + li.actual, 0))}</span></span>
+                <span className="text-gray-500">Total Budgeted: <span className="font-semibold text-gray-900">{formatCurrency(form.lineItems.reduce((s, li) => s + li.budgetedAmount, 0))}</span></span>
+                <span className="text-gray-500">Total Actual: <span className="font-semibold text-gray-900">{formatCurrency(form.lineItems.reduce((s, li) => s + li.actualAmount, 0))}</span></span>
               </div>
             </div>
 

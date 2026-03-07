@@ -6,9 +6,10 @@ import {
 } from "@/components/ui/SharedComponents";
 import {
   Settings, Plus, Edit, Trash2, Calendar, Wrench,
-  Clock, AlertTriangle, Package,
+  Clock, AlertTriangle, Package, Upload,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 const FREQUENCIES = [
   { value: "daily", label: "Daily" }, { value: "weekly", label: "Weekly" },
@@ -33,8 +34,11 @@ export default function MaintenancePage() {
   const [form, setForm] = useState({
     title: "", description: "", asset: "", maintenanceType: "PPM",
     frequency: "monthly", status: "active",
-    nextDueDate: "", estimatedCost: "",
+    nextDueDate: "", estimatedCost: "", actualCost: "",
+    documents: [],
   });
+
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetch("/api/assets").then(r => r.json()).then(d => setAssets(d.assets || (Array.isArray(d) ? d : [])));
@@ -56,7 +60,8 @@ export default function MaintenancePage() {
   const resetForm = () => setForm({
     title: "", description: "", asset: "", maintenanceType: "PPM",
     frequency: "monthly", status: "active",
-    nextDueDate: "", estimatedCost: "",
+    nextDueDate: "", estimatedCost: "", actualCost: "",
+    documents: [],
   });
 
   const handleSubmit = async () => {
@@ -88,6 +93,8 @@ export default function MaintenancePage() {
       frequency: plan.frequency, status: plan.status,
       nextDueDate: plan.nextDueDate?.split("T")[0] || "",
       estimatedCost: plan.estimatedCost || "",
+      actualCost: plan.actualCost || "",
+      documents: plan.documents || [],
     });
     setShowModal(true);
   };
@@ -173,8 +180,11 @@ export default function MaintenancePage() {
             <FormField label="Next Due Date">
               <Input type="date" value={form.nextDueDate} onChange={(e) => setForm({ ...form, nextDueDate: e.target.value })} />
             </FormField>
-            <FormField label="Estimated Cost ($)">
+            <FormField label="Estimated Cost (₦)">
               <Input type="number" value={form.estimatedCost} onChange={(e) => setForm({ ...form, estimatedCost: e.target.value })} />
+            </FormField>
+            <FormField label="Actual Cost (₦)">
+              <Input type="number" value={form.actualCost} onChange={(e) => setForm({ ...form, actualCost: e.target.value })} />
             </FormField>
             <FormField label="Status">
               <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
@@ -183,6 +193,41 @@ export default function MaintenancePage() {
             <FormField label="Description" className="md:col-span-2">
               <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </FormField>
+
+            {/* Document Upload */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Documents</label>
+              {form.documents?.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {form.documents.map((doc, i) => (
+                    <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="text-sm text-gray-700 truncate">{doc.name || doc.url}</span>
+                      <button type="button" onClick={() => setForm({ ...form, documents: form.documents.filter((_, idx) => idx !== i) })} className="p-1 rounded hover:bg-red-100"><Trash2 size={14} className="text-red-400" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className={`inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 text-sm text-gray-500 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                <Upload size={16} />
+                {uploading ? 'Uploading...' : 'Upload Document'}
+                <input type="file" className="hidden" disabled={uploading} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const res = await axios.post('/api/upload', formData);
+                    const url = res.data.links?.[0];
+                    if (url) {
+                      setForm(prev => ({ ...prev, documents: [...(prev.documents || []), { name: file.name, url }] }));
+                      toast.success('Document uploaded');
+                    }
+                  } catch { toast.error('Upload failed'); }
+                  finally { setUploading(false); e.target.value = ''; }
+                }} />
+              </label>
+            </div>
           </div>
         </Modal>
       </div>

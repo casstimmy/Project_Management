@@ -11,8 +11,9 @@ import {
 import toast from "react-hot-toast";
 
 const AUDIT_TYPES = [
-  { value: "routine", label: "Routine" }, { value: "surprise", label: "Surprise" },
-  { value: "follow-up", label: "Follow-up" }, { value: "external", label: "External" },
+  { value: "health-safety", label: "Health & Safety" }, { value: "security", label: "Security" },
+  { value: "environment", label: "Environment" }, { value: "fire-safety", label: "Fire Safety" },
+  { value: "comprehensive", label: "Comprehensive" },
 ];
 
 const HSSE_CATEGORIES = [
@@ -31,9 +32,9 @@ export default function HSSEPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
-    site: "", building: "", auditType: "routine", auditDate: "",
+    title: "", site: "", building: "", auditType: "comprehensive", auditDate: "",
     auditor: "", status: "draft", notes: "",
-    checklist: HSSE_CATEGORIES.map(c => ({ category: c, item: c + " compliance check", status: "yes", remarks: "" })),
+    checklist: HSSE_CATEGORIES.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
     risks: [],
   });
 
@@ -55,14 +56,14 @@ export default function HSSEPage() {
   useEffect(() => { fetchAudits(); }, [fetchAudits]);
 
   const resetForm = () => setForm({
-    site: "", building: "", auditType: "routine", auditDate: "",
+    title: "", site: "", building: "", auditType: "comprehensive", auditDate: "",
     auditor: "", status: "draft", notes: "",
-    checklist: HSSE_CATEGORIES.map(c => ({ category: c, item: c + " compliance check", status: "yes", remarks: "" })),
+    checklist: HSSE_CATEGORIES.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
     risks: [],
   });
 
   const handleSubmit = async () => {
-    if (!form.site) return toast.error("Site is required");
+    if (!form.title || !form.site) return toast.error("Title and site are required");
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
@@ -150,6 +151,9 @@ export default function HSSEPage() {
         >
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField label="Audit Title" required className="md:col-span-2">
+                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Q1 2025 Comprehensive HSSE Audit" />
+              </FormField>
               <FormField label="Site" required>
                 <Select value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })}
                   placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
@@ -164,12 +168,12 @@ export default function HSSEPage() {
               <FormField label="Audit Date">
                 <Input type="date" value={form.auditDate} onChange={(e) => setForm({ ...form, auditDate: e.target.value })} />
               </FormField>
-              <FormField label="Auditor">
+              <FormField label="Auditor" required>
                 <Input value={form.auditor} onChange={(e) => setForm({ ...form, auditor: e.target.value })} placeholder="Auditor name" />
               </FormField>
               <FormField label="Status">
                 <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  options={[{ value: "draft", label: "Draft" }, { value: "in-progress", label: "In Progress" }, { value: "completed", label: "Completed" }]} />
+                  options={[{ value: "draft", label: "Draft" }, { value: "in-progress", label: "In Progress" }, { value: "completed", label: "Completed" }, { value: "approved", label: "Approved" }]} />
               </FormField>
             </div>
 
@@ -182,9 +186,9 @@ export default function HSSEPage() {
                       <p className="text-sm font-medium text-gray-700">{item.category}</p>
                     </div>
                     <div className="col-span-3">
-                      <Select value={item.status} onChange={(e) => {
+                      <Select value={item.response} onChange={(e) => {
                         const updated = [...form.checklist];
-                        updated[i] = { ...updated[i], status: e.target.value };
+                        updated[i] = { ...updated[i], response: e.target.value };
                         setForm({ ...form, checklist: updated });
                       }} options={[
                         { value: "yes", label: "✓ Compliant" },
@@ -193,9 +197,9 @@ export default function HSSEPage() {
                       ]} />
                     </div>
                     <div className="col-span-5">
-                      <Input placeholder="Remarks" value={item.remarks} onChange={(e) => {
+                      <Input placeholder="Comments" value={item.comments} onChange={(e) => {
                         const updated = [...form.checklist];
-                        updated[i] = { ...updated[i], remarks: e.target.value };
+                        updated[i] = { ...updated[i], comments: e.target.value };
                         setForm({ ...form, checklist: updated });
                       }} />
                     </div>
@@ -239,11 +243,11 @@ export default function HSSEPage() {
                   <div className="space-y-1">
                     {showDetail.checklist.map((item, i) => (
                       <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
-                        <span className="text-sm text-gray-700">{item.category} — {item.item}</span>
+                        <span className="text-sm text-gray-700">{item.category} — {item.question}</span>
                         <div className="flex items-center gap-2">
-                          {item.status === "yes" ? (
+                          {item.response === "yes" ? (
                             <CheckCircle size={16} className="text-emerald-500" />
-                          ) : item.status === "no" ? (
+                          ) : item.response === "no" ? (
                             <XCircle size={16} className="text-red-500" />
                           ) : (
                             <span className="text-xs text-gray-400">N/A</span>

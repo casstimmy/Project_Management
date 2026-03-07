@@ -16,7 +16,7 @@ const WorkOrderSchema = new Schema(
     // Type
     type: {
       type: String,
-      enum: ["preventive", "predictive", "reactive", "emergency", "inspection"],
+      enum: ["preventive", "predictive", "corrective", "reactive", "emergency", "inspection"],
       default: "reactive",
     },
 

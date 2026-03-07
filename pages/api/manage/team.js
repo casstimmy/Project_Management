@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
  
 if (method === "POST") {
-  const { name, role, type, email, phone, image } = req.body; // add image
+  const { name, role, type, email, phone, image } = req.body;
 
   if (!name || !role) {
     return res.status(400).json({ success: false, message: "Name and role are required" });
@@ -54,7 +54,7 @@ if (method === "POST") {
 }
 
 if (method === "PUT") {
-  const { _id, image, ...data } = req.body; // extract image too
+  const { _id, image, ...data } = req.body;
   if (!_id) return res.status(400).json({ success: false, message: "Member ID is required" });
 
   const updated = await Team.findByIdAndUpdate(_id, { ...data, image }, { new: true });

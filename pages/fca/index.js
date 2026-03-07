@@ -177,28 +177,43 @@ export default function FCAPage() {
 
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-3">System Ratings</h4>
+              <div className="grid grid-cols-12 gap-3 mb-2 px-3">
+                <div className="col-span-2"><p className="text-xs font-semibold text-gray-500 uppercase">System</p></div>
+                <div className="col-span-3"><p className="text-xs font-semibold text-gray-500 uppercase">Condition Rating</p></div>
+                <div className="col-span-2"><p className="text-xs font-semibold text-gray-500 uppercase">Est. Cost (₦)</p></div>
+                <div className="col-span-4"><p className="text-xs font-semibold text-gray-500 uppercase">Notes</p></div>
+                <div className="col-span-1"><p className="text-xs font-semibold text-gray-500 uppercase text-center">Score</p></div>
+              </div>
               <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
                 {form.systemRatings.map((sr, i) => (
                   <div key={sr.system} className="grid grid-cols-12 gap-3 items-center bg-gray-50 rounded-lg p-3">
-                    <div className="col-span-3">
+                    <div className="col-span-2">
                       <p className="text-sm font-medium text-gray-700">{sr.system}</p>
                     </div>
-                    <div className="col-span-4">
+                    <div className="col-span-3">
                       <Select value={sr.conditionRating} onChange={(e) => {
                         const updated = [...form.systemRatings];
                         updated[i] = { ...updated[i], conditionRating: Number(e.target.value) };
                         setForm({ ...form, systemRatings: updated });
                       }} options={CONDITION_RATINGS.map(r => ({ value: r.value, label: r.label }))} />
                     </div>
-                    <div className="col-span-3">
-                      <Input type="number" placeholder="Est. Cost"
+                    <div className="col-span-2">
+                      <Input type="number" placeholder="0"
                         value={sr.estimatedCost} onChange={(e) => {
                           const updated = [...form.systemRatings];
                           updated[i] = { ...updated[i], estimatedCost: Number(e.target.value) };
                           setForm({ ...form, systemRatings: updated });
                         }} />
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-4">
+                      <Input placeholder="Add notes..."
+                        value={sr.notes || ""} onChange={(e) => {
+                          const updated = [...form.systemRatings];
+                          updated[i] = { ...updated[i], notes: e.target.value };
+                          setForm({ ...form, systemRatings: updated });
+                        }} />
+                    </div>
+                    <div className="col-span-1 flex justify-center">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                         sr.conditionRating >= 4 ? "bg-emerald-100 text-emerald-700" :
                         sr.conditionRating === 3 ? "bg-amber-100 text-amber-700" :

@@ -3,6 +3,7 @@ import mongoose, { Schema, model, models } from "mongoose";
 const TeamSchema = new Schema(
   {
     name: { type: String, required: true },
+    email: { type: String, default: "" },
     role: { type: String, required: true },
     type: { type: String, enum: ["Worker", "Specialist"], default: "Worker" },
     phone: { type: String },

@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 
 const WO_TYPES = [
   { value: "preventive", label: "Preventive" }, { value: "predictive", label: "Predictive" },
+  { value: "corrective", label: "Corrective Maintenance" },
   { value: "reactive", label: "Reactive" }, { value: "emergency", label: "Emergency" },
   { value: "inspection", label: "Inspection" },
 ];

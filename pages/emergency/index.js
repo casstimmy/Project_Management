@@ -19,11 +19,12 @@ export default function EmergencyPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
-    site: "", title: "", planType: "fire", status: "draft",
+    site: "", title: "", status: "draft",
     effectiveDate: "", reviewDate: "", description: "",
-    emergencyContacts: [{ name: "", role: "", phone: "", email: "" }],
-    assemblyPoints: "",
-    drills: [],
+    contacts: [{ name: "", role: "", phone: "", email: "", organization: "", type: "internal" }],
+    assemblyPoints: [{ name: "", location: "" }],
+    incidentResponsePlan: "", evacuationProcedure: "",
+    drillLogs: [],
   });
 
   useEffect(() => {
@@ -43,11 +44,12 @@ export default function EmergencyPage() {
   useEffect(() => { fetchPlans(); }, [fetchPlans]);
 
   const resetForm = () => setForm({
-    site: "", title: "", planType: "fire", status: "draft",
+    site: "", title: "", status: "draft",
     effectiveDate: "", reviewDate: "", description: "",
-    emergencyContacts: [{ name: "", role: "", phone: "", email: "" }],
-    assemblyPoints: "",
-    drills: [],
+    contacts: [{ name: "", role: "", phone: "", email: "", organization: "", type: "internal" }],
+    assemblyPoints: [{ name: "", location: "" }],
+    incidentResponsePlan: "", evacuationProcedure: "",
+    drillLogs: [],
   });
 
   const handleSubmit = async () => {
@@ -72,17 +74,31 @@ export default function EmergencyPage() {
   };
 
   const addContact = () => {
-    setForm({ ...form, emergencyContacts: [...form.emergencyContacts, { name: "", role: "", phone: "", email: "" }] });
+    setForm({ ...form, contacts: [...form.contacts, { name: "", role: "", phone: "", email: "", organization: "", type: "internal" }] });
   };
 
   const updateContact = (index, field, value) => {
-    const updated = [...form.emergencyContacts];
+    const updated = [...form.contacts];
     updated[index] = { ...updated[index], [field]: value };
-    setForm({ ...form, emergencyContacts: updated });
+    setForm({ ...form, contacts: updated });
   };
 
   const removeContact = (index) => {
-    setForm({ ...form, emergencyContacts: form.emergencyContacts.filter((_, i) => i !== index) });
+    setForm({ ...form, contacts: form.contacts.filter((_, i) => i !== index) });
+  };
+
+  const addAssemblyPoint = () => {
+    setForm({ ...form, assemblyPoints: [...form.assemblyPoints, { name: "", location: "" }] });
+  };
+
+  const updateAssemblyPoint = (index, field, value) => {
+    const updated = [...form.assemblyPoints];
+    updated[index] = { ...updated[index], [field]: value };
+    setForm({ ...form, assemblyPoints: updated });
+  };
+
+  const removeAssemblyPoint = (index) => {
+    setForm({ ...form, assemblyPoints: form.assemblyPoints.filter((_, i) => i !== index) });
   };
 
   const columns = [
@@ -93,13 +109,13 @@ export default function EmergencyPage() {
         </div>
         <div>
           <p className="font-medium text-gray-900">{row.title}</p>
-          <p className="text-xs text-gray-400 capitalize">{row.planType}</p>
+          <p className="text-xs text-gray-400">{row.status}</p>
         </div>
       </div>
     )},
     { header: "Site", render: (row) => <span className="text-gray-600">{row.site?.name || "—"}</span> },
-    { header: "Contacts", render: (row) => <span className="text-gray-600">{row.emergencyContacts?.length || 0}</span> },
-    { header: "Drills", render: (row) => <span className="text-gray-600">{row.drills?.length || 0}</span> },
+    { header: "Contacts", render: (row) => <span className="text-gray-600">{row.contacts?.length || 0}</span> },
+    { header: "Drills", render: (row) => <span className="text-gray-600">{row.drillLogs?.length || 0}</span> },
     { header: "Review Date", render: (row) => (
       <span className={`text-sm ${row.reviewDate && new Date(row.reviewDate) < new Date() ? "text-red-600 font-medium" : "text-gray-600"}`}>
         {row.reviewDate ? new Date(row.reviewDate).toLocaleDateString() : "—"}
@@ -131,7 +147,7 @@ export default function EmergencyPage() {
           <StatCard icon={<Siren size={20} />} label="Total Plans" value={plans.length} color="blue" />
           <StatCard icon={<FileText size={20} />} label="Active" value={activeCount} color="green" />
           <StatCard icon={<Calendar size={20} />} label="Due for Review" value={overdueReview} color="yellow" />
-          <StatCard icon={<Users size={20} />} label="Total Contacts" value={plans.reduce((s, p) => s + (p.emergencyContacts?.length || 0), 0)} color="purple" />
+          <StatCard icon={<Users size={20} />} label="Total Contacts" value={plans.reduce((s, p) => s + (p.contacts?.length || 0), 0)} color="purple" />
         </div>
 
         <DataTable columns={columns} data={plans} loading={loading} onSearch={setSearch} searchValue={search}
@@ -151,14 +167,9 @@ export default function EmergencyPage() {
                 <Select value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })}
                   placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
               </FormField>
-              <FormField label="Plan Type">
-                <Select value={form.planType} onChange={(e) => setForm({ ...form, planType: e.target.value })}
-                  options={[
-                    { value: "fire", label: "Fire" }, { value: "earthquake", label: "Earthquake" },
-                    { value: "flood", label: "Flood" }, { value: "chemical-spill", label: "Chemical Spill" },
-                    { value: "medical", label: "Medical Emergency" }, { value: "security", label: "Security Threat" },
-                    { value: "pandemic", label: "Pandemic" }, { value: "general", label: "General" },
-                  ]} />
+              <FormField label="Status">
+                <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  options={[{ value: "draft", label: "Draft" }, { value: "active", label: "Active" }, { value: "under-review", label: "Under Review" }, { value: "archived", label: "Archived" }]} />
               </FormField>
               <FormField label="Effective Date">
                 <Input type="date" value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} />
@@ -166,29 +177,57 @@ export default function EmergencyPage() {
               <FormField label="Review Date">
                 <Input type="date" value={form.reviewDate} onChange={(e) => setForm({ ...form, reviewDate: e.target.value })} />
               </FormField>
-              <FormField label="Status">
-                <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  options={[{ value: "draft", label: "Draft" }, { value: "active", label: "Active" }, { value: "approved", label: "Approved" }, { value: "under-review", label: "Under Review" }]} />
-              </FormField>
-              <FormField label="Assembly Points">
-                <Input value={form.assemblyPoints} onChange={(e) => setForm({ ...form, assemblyPoints: e.target.value })} placeholder="e.g., Parking Lot A, Main Gate" />
-              </FormField>
             </div>
 
+            <FormField label="Incident Response Plan">
+              <Textarea rows={3} value={form.incidentResponsePlan} onChange={(e) => setForm({ ...form, incidentResponsePlan: e.target.value })} placeholder="Describe the incident response procedures..." />
+            </FormField>
+
+            <FormField label="Evacuation Procedure">
+              <Textarea rows={3} value={form.evacuationProcedure} onChange={(e) => setForm({ ...form, evacuationProcedure: e.target.value })} placeholder="Describe evacuation procedures..." />
+            </FormField>
+
+            {/* Assembly Points */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700">Assembly Points</h4>
+                <Button variant="ghost" size="xs" icon={<Plus size={14} />} onClick={addAssemblyPoint}>Add Point</Button>
+              </div>
+              <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
+                {form.assemblyPoints.map((point, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 bg-gray-50 rounded-lg p-3 items-center">
+                    <div className="col-span-5"><Input placeholder="Name (e.g., Assembly Point A)" value={point.name} onChange={(e) => updateAssemblyPoint(i, "name", e.target.value)} /></div>
+                    <div className="col-span-5"><Input placeholder="Location (e.g., Parking Lot A)" value={point.location} onChange={(e) => updateAssemblyPoint(i, "location", e.target.value)} /></div>
+                    <div className="col-span-2 text-center">
+                      {form.assemblyPoints.length > 1 && (
+                        <button onClick={() => removeAssemblyPoint(i)} className="p-1 rounded hover:bg-red-100"><Trash2 size={14} className="text-red-400" /></button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Emergency Contacts */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-semibold text-gray-700">Emergency Contacts</h4>
                 <Button variant="ghost" size="xs" icon={<Plus size={14} />} onClick={addContact}>Add Contact</Button>
               </div>
               <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
-                {form.emergencyContacts.map((contact, i) => (
+                {form.contacts.map((contact, i) => (
                   <div key={i} className="grid grid-cols-12 gap-2 bg-gray-50 rounded-lg p-3 items-center">
-                    <div className="col-span-3"><Input placeholder="Name" value={contact.name} onChange={(e) => updateContact(i, "name", e.target.value)} /></div>
-                    <div className="col-span-3"><Input placeholder="Role" value={contact.role} onChange={(e) => updateContact(i, "role", e.target.value)} /></div>
-                    <div className="col-span-3"><Input placeholder="Phone" value={contact.phone} onChange={(e) => updateContact(i, "phone", e.target.value)} /></div>
+                    <div className="col-span-2"><Input placeholder="Name" value={contact.name} onChange={(e) => updateContact(i, "name", e.target.value)} /></div>
+                    <div className="col-span-2"><Input placeholder="Role" value={contact.role} onChange={(e) => updateContact(i, "role", e.target.value)} /></div>
+                    <div className="col-span-2"><Input placeholder="Organization" value={contact.organization} onChange={(e) => updateContact(i, "organization", e.target.value)} /></div>
+                    <div className="col-span-2"><Input placeholder="Phone" value={contact.phone} onChange={(e) => updateContact(i, "phone", e.target.value)} /></div>
                     <div className="col-span-2"><Input placeholder="Email" value={contact.email} onChange={(e) => updateContact(i, "email", e.target.value)} /></div>
+                    <div className="col-span-1">
+                      <Select value={contact.type} onChange={(e) => updateContact(i, "type", e.target.value)}
+                        options={[{ value: "internal", label: "Int" }, { value: "external", label: "Ext" }]} />
+                    </div>
                     <div className="col-span-1 text-center">
-                      {form.emergencyContacts.length > 1 && (
+                      {form.contacts.length > 1 && (
                         <button onClick={() => removeContact(i)} className="p-1 rounded hover:bg-red-100"><Trash2 size={14} className="text-red-400" /></button>
                       )}
                     </div>
@@ -197,8 +236,8 @@ export default function EmergencyPage() {
               </div>
             </div>
 
-            <FormField label="Description">
-              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Emergency response procedures..." />
+            <FormField label="Description / Additional Notes">
+              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Additional notes and procedures..." />
             </FormField>
           </div>
         </Modal>
@@ -209,8 +248,8 @@ export default function EmergencyPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">Type</p>
-                  <p className="font-semibold text-sm capitalize">{showDetail.planType}</p>
+                  <p className="text-xs text-gray-500">Title</p>
+                  <p className="font-semibold text-sm">{showDetail.title}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500">Site</p>
@@ -226,15 +265,15 @@ export default function EmergencyPage() {
                 </div>
               </div>
 
-              {showDetail.emergencyContacts?.length > 0 && (
+              {showDetail.contacts?.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">Emergency Contacts</h4>
                   <div className="space-y-2">
-                    {showDetail.emergencyContacts.map((c, i) => (
+                    {showDetail.contacts.map((c, i) => (
                       <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
                         <div>
                           <p className="text-sm font-medium text-gray-900">{c.name}</p>
-                          <p className="text-xs text-gray-500">{c.role}</p>
+                          <p className="text-xs text-gray-500">{c.role}{c.organization ? ` • ${c.organization}` : ""}</p>
                         </div>
                         <div className="flex items-center gap-3">
                           {c.phone && <span className="text-sm text-gray-600 flex items-center gap-1"><Phone size={12} />{c.phone}</span>}
@@ -245,9 +284,36 @@ export default function EmergencyPage() {
                 </div>
               )}
 
+              {showDetail.assemblyPoints?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Assembly Points</h4>
+                  <div className="space-y-1">
+                    {showDetail.assemblyPoints.map((ap, i) => (
+                      <div key={i} className="bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-700">
+                        <span className="font-medium">{ap.name}</span>{ap.location ? ` — ${ap.location}` : ""}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {showDetail.incidentResponsePlan && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Incident Response Plan</h4>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{showDetail.incidentResponsePlan}</p>
+                </div>
+              )}
+
+              {showDetail.evacuationProcedure && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Evacuation Procedure</h4>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{showDetail.evacuationProcedure}</p>
+                </div>
+              )}
+
               {showDetail.description && (
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Procedures</h4>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Additional Notes</h4>
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">{showDetail.description}</p>
                 </div>
               )}
