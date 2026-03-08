@@ -39,10 +39,13 @@ export default async function handler(req, res) {
     }
 
     if (method === "POST") {
-      const data = req.body;
+      const data = { ...req.body };
       if (!data.title || !data.fiscalYear || !data.budgetType) {
         return res.status(400).json({ error: "Title, fiscal year, and budget type are required" });
       }
+      // Normalize empty ObjectId fields to prevent BSON cast errors
+      if (!data.site) delete data.site;
+      if (!data.building) delete data.building;
 
       const budget = new Budget(data);
       await budget.save();
@@ -52,6 +55,9 @@ export default async function handler(req, res) {
     if (method === "PUT") {
       const { _id, ...data } = req.body;
       if (!_id) return res.status(400).json({ error: "Budget ID is required" });
+      // Normalize empty ObjectId fields
+      if (!data.site) data.site = undefined;
+      if (!data.building) data.building = undefined;
 
       const budget = await Budget.findById(_id);
       if (!budget) return res.status(404).json({ error: "Budget not found" });

@@ -1,13 +1,17 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import User from "@/models/User";
 import bcrypt from "bcrypt";
+import { applyRateLimit, authLimiter } from "@/lib/rateLimit";
 
 export default async function handler(req, res) {
-  await mongooseConnect();
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  // Strict rate limit on registration: 5 attempts per minute per IP
+  if (!applyRateLimit(req, res, authLimiter, 5)) return;
+
+  await mongooseConnect();
 
   const { name, email, password } = req.body;
 

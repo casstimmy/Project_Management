@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/SharedComponents";
 import {
   ClipboardCheck, Plus, Edit, Trash2, Eye, Building2,
-  AlertTriangle, BarChart3, TrendingDown,
+  AlertTriangle, BarChart3, TrendingDown, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
@@ -19,7 +19,7 @@ const CONDITION_RATINGS = [
   { value: 5, label: "5 - Excellent (Like New)" },
 ];
 
-const FCA_SYSTEMS = [
+const DEFAULT_FCA_SYSTEMS = [
   "Roofing", "Exterior Walls", "Windows & Doors", "Interior Finishes",
   "HVAC", "Plumbing", "Electrical", "Fire Protection",
   "Elevators", "Site/Grounds", "Structure/Foundation",
@@ -33,10 +33,12 @@ export default function FCAPage() {
   const [showDetail, setShowDetail] = useState(null);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
+  const [fcaSystems, setFcaSystems] = useState(DEFAULT_FCA_SYSTEMS);
+  const [newSystemName, setNewSystemName] = useState("");
   const [form, setForm] = useState({
     building: "", assessmentDate: "", assessor: "", status: "draft",
     currentReplacementValue: "", notes: "",
-    systemRatings: FCA_SYSTEMS.map(s => ({ system: s, conditionRating: 3, notes: "", estimatedCost: 0 })),
+    systemRatings: DEFAULT_FCA_SYSTEMS.map(s => ({ system: s, conditionRating: 3, notes: "", estimatedCost: 0 })),
   });
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -58,11 +60,39 @@ export default function FCAPage() {
 
   useEffect(() => { fetchFCA(); }, [fetchFCA]);
 
-  const resetForm = () => setForm({
-    building: "", assessmentDate: "", assessor: "", status: "draft",
-    currentReplacementValue: "", notes: "",
-    systemRatings: FCA_SYSTEMS.map(s => ({ system: s, conditionRating: 3, notes: "", estimatedCost: 0 })),
-  });
+  const resetForm = () => {
+    setForm({
+      building: "", assessmentDate: "", assessor: "", status: "draft",
+      currentReplacementValue: "", notes: "",
+      systemRatings: fcaSystems.map(s => ({ system: s, conditionRating: 3, notes: "", estimatedCost: 0 })),
+    });
+    setNewSystemName("");
+  };
+
+  const handleAddSystem = () => {
+    const name = newSystemName.trim();
+    if (!name) return;
+    if (form.systemRatings.some(sr => sr.system.toLowerCase() === name.toLowerCase())) {
+      return toast.error("System already exists");
+    }
+    setFcaSystems(prev => [...prev, name]);
+    setForm(prev => ({
+      ...prev,
+      systemRatings: [...prev.systemRatings, { system: name, conditionRating: 3, notes: "", estimatedCost: 0 }],
+    }));
+    setNewSystemName("");
+  };
+
+  const handleRemoveSystem = (index) => {
+    const systemName = form.systemRatings[index]?.system;
+    setForm(prev => ({
+      ...prev,
+      systemRatings: prev.systemRatings.filter((_, i) => i !== index),
+    }));
+    if (!DEFAULT_FCA_SYSTEMS.includes(systemName)) {
+      setFcaSystems(prev => prev.filter(s => s !== systemName));
+    }
+  };
 
   const handleSubmit = async () => {
     if (!form.building) return toast.error("Building is required");
@@ -194,17 +224,52 @@ export default function FCAPage() {
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">System Ratings</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700">System Ratings</h4>
+              </div>
+              {/* Add new system row */}
+              <div className="flex items-center gap-2 mb-3">
+                <Select
+                  value=""
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    if (!name || form.systemRatings.some(sr => sr.system === name)) return;
+                    setForm(prev => ({
+                      ...prev,
+                      systemRatings: [...prev.systemRatings, { system: name, conditionRating: 3, notes: "", estimatedCost: 0 }],
+                    }));
+                  }}
+                  placeholder="Add existing system..."
+                  options={fcaSystems
+                    .filter(s => !form.systemRatings.some(sr => sr.system === s))
+                    .map(s => ({ value: s, label: s }))}
+                />
+                <div className="flex items-center gap-1">
+                  <Input
+                    placeholder="New system name..."
+                    value={newSystemName}
+                    onChange={(e) => setNewSystemName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddSystem(); } }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddSystem}
+                    className="px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-12 gap-3 mb-2 px-3">
                 <div className="col-span-2"><p className="text-xs font-semibold text-gray-500 uppercase">System</p></div>
                 <div className="col-span-3"><p className="text-xs font-semibold text-gray-500 uppercase">Condition Rating</p></div>
                 <div className="col-span-2"><p className="text-xs font-semibold text-gray-500 uppercase">Est. Cost (₦)</p></div>
                 <div className="col-span-4"><p className="text-xs font-semibold text-gray-500 uppercase">Notes</p></div>
-                <div className="col-span-1"><p className="text-xs font-semibold text-gray-500 uppercase text-center">Score</p></div>
+                <div className="col-span-1"><p className="text-xs font-semibold text-gray-500 uppercase text-center">Action</p></div>
               </div>
               <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
                 {form.systemRatings.map((sr, i) => (
-                  <div key={sr.system} className="grid grid-cols-12 gap-3 items-center bg-gray-50 rounded-lg p-3">
+                  <div key={`${sr.system}-${i}`} className="grid grid-cols-12 gap-3 items-center bg-gray-50 rounded-lg p-3">
                     <div className="col-span-2">
                       <p className="text-sm font-medium text-gray-700">{sr.system}</p>
                     </div>
@@ -231,12 +296,15 @@ export default function FCAPage() {
                           setForm({ ...form, systemRatings: updated });
                         }} />
                     </div>
-                    <div className="col-span-1 flex justify-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <div className="col-span-1 flex justify-center gap-1">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                         sr.conditionRating >= 4 ? "bg-emerald-100 text-emerald-700" :
                         sr.conditionRating === 3 ? "bg-amber-100 text-amber-700" :
                         "bg-red-100 text-red-700"
                       }`}>{sr.conditionRating}</div>
+                      <button type="button" onClick={() => handleRemoveSystem(i)} className="p-1 rounded hover:bg-red-100">
+                        <X size={14} className="text-red-400" />
+                      </button>
                     </div>
                   </div>
                 ))}

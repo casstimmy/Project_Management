@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/SharedComponents";
 import {
   DollarSign, Plus, Edit, Trash2, Eye, TrendingUp,
-  TrendingDown, BarChart3, PieChart,
+  TrendingDown, BarChart3, PieChart, Calculator, MapPin,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as ReChart, Pie, Cell } from "recharts";
@@ -28,15 +28,20 @@ const CHART_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#E
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState([]);
+  const [sites, setSites] = useState([]);
+  const [buildings, setBuildings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDetail, setShowDetail] = useState(null);
+  const [showProjection, setShowProjection] = useState(false);
+  const [inflationRate, setInflationRate] = useState(5);
+  const [projectionYears, setProjectionYears] = useState(3);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [form, setForm] = useState({
     title: "", budgetType: "OPEX", fiscalYear: new Date().getFullYear().toString(),
-    site: "", costCenter: "", status: "draft", notes: "",
+    site: "", building: "", costCenter: "", status: "draft", notes: "",
     lineItems: [{ description: "", category: "", budgetedAmount: 0, actualAmount: 0 }],
   });
   const [saving, setSaving] = useState(false);
@@ -55,9 +60,21 @@ export default function BudgetsPage() {
 
   useEffect(() => { fetchBudgets(); }, [fetchBudgets]);
 
+  useEffect(() => {
+    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (form.site) {
+      fetch(`/api/buildings?siteId=${form.site}`).then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
+    } else {
+      setBuildings([]);
+    }
+  }, [form.site]);
+
   const resetForm = () => setForm({
     title: "", budgetType: "OPEX", fiscalYear: new Date().getFullYear().toString(),
-    site: "", costCenter: "", status: "draft", notes: "",
+    site: "", building: "", costCenter: "", status: "draft", notes: "",
     lineItems: [{ description: "", category: "", budgetedAmount: 0, actualAmount: 0 }],
   });
 
@@ -115,11 +132,48 @@ export default function BudgetsPage() {
   const totalActual = budgets.reduce((s, b) => s + (b.totalActual || 0), 0);
   const totalVariance = totalBudgeted - totalActual;
 
-  // Chart data
+  // Chart data - year by year breakdown
   const budgetByType = [
     { name: "OPEX", budgeted: budgets.filter(b => b.budgetType === "OPEX").reduce((s, b) => s + (b.totalBudgeted || 0), 0), actual: budgets.filter(b => b.budgetType === "OPEX").reduce((s, b) => s + (b.totalActual || 0), 0) },
     { name: "CAPEX", budgeted: budgets.filter(b => b.budgetType === "CAPEX").reduce((s, b) => s + (b.totalBudgeted || 0), 0), actual: budgets.filter(b => b.budgetType === "CAPEX").reduce((s, b) => s + (b.totalActual || 0), 0) },
   ];
+
+  // Year-over-year data for trend analysis
+  const yearlyData = (() => {
+    const years = [...new Set(budgets.map(b => b.fiscalYear))].sort();
+    return years.map(year => {
+      const yBudgets = budgets.filter(b => b.fiscalYear === year);
+      return {
+        year: `FY${year}`,
+        opexBudgeted: yBudgets.filter(b => b.budgetType === "OPEX").reduce((s, b) => s + (b.totalBudgeted || 0), 0),
+        opexActual: yBudgets.filter(b => b.budgetType === "OPEX").reduce((s, b) => s + (b.totalActual || 0), 0),
+        capexBudgeted: yBudgets.filter(b => b.budgetType === "CAPEX").reduce((s, b) => s + (b.totalBudgeted || 0), 0),
+        capexActual: yBudgets.filter(b => b.budgetType === "CAPEX").reduce((s, b) => s + (b.totalActual || 0), 0),
+      };
+    });
+  })();
+
+  // Budget projections from historical data
+  const projections = (() => {
+    const years = [...new Set(budgets.map(b => b.fiscalYear))].sort();
+    if (years.length < 1) return [];
+    const latestYear = Math.max(...years);
+    const opexLatest = budgets.filter(b => b.budgetType === "OPEX" && b.fiscalYear === latestYear).reduce((s, b) => s + (b.totalActual || b.totalBudgeted || 0), 0);
+    const capexLatest = budgets.filter(b => b.budgetType === "CAPEX" && b.fiscalYear === latestYear).reduce((s, b) => s + (b.totalActual || b.totalBudgeted || 0), 0);
+
+    const result = [];
+    for (let i = 1; i <= projectionYears; i++) {
+      const factor = Math.pow(1 + inflationRate / 100, i);
+      result.push({
+        year: `FY${latestYear + i}`,
+        projectedOpex: Math.round(opexLatest * factor),
+        projectedCapex: Math.round(capexLatest * factor),
+        total: Math.round((opexLatest + capexLatest) * factor),
+        inflationFactor: `${(factor * 100 - 100).toFixed(1)}%`,
+      });
+    }
+    return result;
+  })();
 
   const columns = [
     { header: "Budget", render: (row) => (
@@ -135,6 +189,9 @@ export default function BudgetsPage() {
     )},
     { header: "Budgeted", render: (row) => <span className="font-medium text-gray-700">{formatCurrency(row.totalBudgeted)}</span> },
     { header: "Actual", render: (row) => <span className="font-medium text-gray-700">{formatCurrency(row.totalActual)}</span> },
+    { header: "Location", render: (row) => (
+      <span className="text-sm text-gray-600">{row.site?.name || "—"}</span>
+    )},
     { header: "Variance", render: (row) => {
       const v = (row.totalBudgeted || 0) - (row.totalActual || 0);
       return (
@@ -160,7 +217,10 @@ export default function BudgetsPage() {
           title="Budgets & Finance"
           subtitle="OPEX and CAPEX budget management"
           breadcrumbs={[{ label: "Dashboard", href: "/homePage" }, { label: "Budgets & Finance" }]}
-          actions={<Button icon={<Plus size={16} />} onClick={() => { resetForm(); setEditing(null); setShowModal(true); }}>New Budget</Button>}
+          actions={<div className="flex gap-2">
+            <Button variant="secondary" icon={<Calculator size={16} />} onClick={() => setShowProjection(true)}>Projections</Button>
+            <Button icon={<Plus size={16} />} onClick={() => { resetForm(); setEditing(null); setShowModal(true); }}>New Budget</Button>
+          </div>}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -172,21 +232,39 @@ export default function BudgetsPage() {
           <StatCard icon={<PieChart size={20} />} label="Budget Count" value={budgets.length} color="indigo" />
         </div>
 
-        {/* Budget vs Actual Chart */}
+        {/* Budget vs Actual Charts */}
         {budgets.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Budget vs Actual by Type</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={budgetByType}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => formatCurrency(v)} />
-                <Legend />
-                <Bar dataKey="budgeted" fill="#3B82F6" name="Budgeted" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actual" fill="#10B981" name="Actual" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">Budget vs Actual by Type</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={budgetByType}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <Legend />
+                  <Bar dataKey="budgeted" fill="#3B82F6" name="Budgeted" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="actual" fill="#10B981" name="Actual" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {yearlyData.length > 1 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">Year-over-Year Trend</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="year" />
+                    <YAxis tickFormatter={(v) => `₦${(v / 1000000).toFixed(1)}M`} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend />
+                    <Bar dataKey="opexActual" fill="#3B82F6" name="OPEX" radius={[4, 4, 0, 0]} stackId="actual" />
+                    <Bar dataKey="capexActual" fill="#8B5CF6" name="CAPEX" radius={[4, 4, 0, 0]} stackId="actual" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         )}
 
@@ -217,6 +295,14 @@ export default function BudgetsPage() {
               <FormField label="Status">
                 <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
                   options={[{ value: "draft", label: "Draft" }, { value: "submitted", label: "Submitted" }, { value: "approved", label: "Approved" }, { value: "rejected", label: "Rejected" }]} />
+              </FormField>
+              <FormField label="Site / Location">
+                <Select value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value, building: "" })}
+                  placeholder="Select site (optional)" options={sites.map(s => ({ value: s._id, label: s.name }))} />
+              </FormField>
+              <FormField label="Building">
+                <Select value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value })}
+                  placeholder="Select building (optional)" options={buildings.map(b => ({ value: b._id, label: b.name }))} />
               </FormField>
             </div>
 
@@ -326,6 +412,74 @@ export default function BudgetsPage() {
               )}
             </div>
           )}
+        </Modal>
+
+        {/* Budget Projection Modal */}
+        <Modal isOpen={showProjection} onClose={() => setShowProjection(false)} title="Budget Projections" size="xl">
+          <div className="space-y-5">
+            <p className="text-sm text-gray-500">
+              Project future OPEX and CAPEX budgets based on historical data adjusted for economic factors.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Annual Inflation Rate (%)">
+                <Input type="number" min="0" max="50" step="0.5" value={inflationRate}
+                  onChange={(e) => setInflationRate(Number(e.target.value))} />
+              </FormField>
+              <FormField label="Projection Years">
+                <Select value={projectionYears} onChange={(e) => setProjectionYears(Number(e.target.value))}
+                  options={[{ value: 1, label: "1 Year" }, { value: 2, label: "2 Years" }, { value: 3, label: "3 Years" }, { value: 5, label: "5 Years" }]} />
+              </FormField>
+            </div>
+
+            {projections.length > 0 ? (
+              <>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Year</th>
+                        <th className="text-right px-4 py-3 font-semibold text-gray-600">Projected OPEX</th>
+                        <th className="text-right px-4 py-3 font-semibold text-gray-600">Projected CAPEX</th>
+                        <th className="text-right px-4 py-3 font-semibold text-gray-600">Total</th>
+                        <th className="text-right px-4 py-3 font-semibold text-gray-600">Inflation Adj.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {projections.map((p, i) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-900">{p.year}</td>
+                          <td className="px-4 py-3 text-right text-blue-700 font-medium">{formatCurrency(p.projectedOpex)}</td>
+                          <td className="px-4 py-3 text-right text-purple-700 font-medium">{formatCurrency(p.projectedCapex)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-gray-900">{formatCurrency(p.total)}</td>
+                          <td className="px-4 py-3 text-right text-amber-600">+{p.inflationFactor}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4">Projected Budget Trend</h4>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={projections}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="year" />
+                      <YAxis tickFormatter={(v) => `₦${(v / 1000000).toFixed(1)}M`} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} />
+                      <Legend />
+                      <Bar dataKey="projectedOpex" fill="#3B82F6" name="OPEX" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="projectedCapex" fill="#8B5CF6" name="CAPEX" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Calculator size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Add budget data to generate projections.</p>
+              </div>
+            )}
+          </div>
         </Modal>
       </div>
     </Layout>

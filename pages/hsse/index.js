@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/SharedComponents";
 import {
   ShieldCheck, Plus, Edit, Trash2, Eye, AlertTriangle,
-  CheckCircle, XCircle, BarChart3,
+  CheckCircle, XCircle, BarChart3, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
@@ -17,7 +17,7 @@ const AUDIT_TYPES = [
   { value: "comprehensive", label: "Comprehensive" },
 ];
 
-const HSSE_CATEGORIES = [
+const DEFAULT_HSSE_CATEGORIES = [
   "Fire Safety", "Electrical Safety", "Chemical Handling", "PPE Compliance",
   "Housekeeping", "Emergency Exits", "First Aid", "Signage",
   "Waste Management", "Environmental", "Ergonomics", "Fall Protection",
@@ -32,10 +32,12 @@ export default function HSSEPage() {
   const [showDetail, setShowDetail] = useState(null);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
+  const [hsseCategories, setHsseCategories] = useState(DEFAULT_HSSE_CATEGORIES);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [form, setForm] = useState({
     title: "", site: "", building: "", auditType: "comprehensive", auditDate: "",
     auditor: "", status: "draft", notes: "",
-    checklist: HSSE_CATEGORIES.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
+    checklist: DEFAULT_HSSE_CATEGORIES.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
     risks: [],
   });
   const [saving, setSaving] = useState(false);
@@ -59,12 +61,40 @@ export default function HSSEPage() {
 
   useEffect(() => { fetchAudits(); }, [fetchAudits]);
 
-  const resetForm = () => setForm({
-    title: "", site: "", building: "", auditType: "comprehensive", auditDate: "",
-    auditor: "", status: "draft", notes: "",
-    checklist: HSSE_CATEGORIES.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
-    risks: [],
-  });
+  const resetForm = () => {
+    setForm({
+      title: "", site: "", building: "", auditType: "comprehensive", auditDate: "",
+      auditor: "", status: "draft", notes: "",
+      checklist: hsseCategories.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
+      risks: [],
+    });
+    setNewCategoryName("");
+  };
+
+  const handleAddCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    if (form.checklist.some(c => c.category.toLowerCase() === name.toLowerCase())) {
+      return toast.error("Category already exists");
+    }
+    setHsseCategories(prev => [...prev, name]);
+    setForm(prev => ({
+      ...prev,
+      checklist: [...prev.checklist, { category: name, question: name + " compliance check", response: "yes", comments: "" }],
+    }));
+    setNewCategoryName("");
+  };
+
+  const handleRemoveCategory = (index) => {
+    const catName = form.checklist[index]?.category;
+    setForm(prev => ({
+      ...prev,
+      checklist: prev.checklist.filter((_, i) => i !== index),
+    }));
+    if (!DEFAULT_HSSE_CATEGORIES.includes(catName)) {
+      setHsseCategories(prev => prev.filter(c => c !== catName));
+    }
+  };
 
   const handleSubmit = async () => {
     if (!form.title || !form.site) return toast.error("Title and site are required");
@@ -196,11 +226,46 @@ export default function HSSEPage() {
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Checklist Items</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700">Checklist Items</h4>
+              </div>
+              {/* Add new checklist item */}
+              <div className="flex items-center gap-2 mb-3">
+                <Select
+                  value=""
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    if (!name || form.checklist.some(c => c.category === name)) return;
+                    setForm(prev => ({
+                      ...prev,
+                      checklist: [...prev.checklist, { category: name, question: name + " compliance check", response: "yes", comments: "" }],
+                    }));
+                  }}
+                  placeholder="Add existing category..."
+                  options={hsseCategories
+                    .filter(c => !form.checklist.some(item => item.category === c))
+                    .map(c => ({ value: c, label: c }))}
+                />
+                <div className="flex items-center gap-1">
+                  <Input
+                    placeholder="New category name..."
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCategory(); } }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
               <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                 {form.checklist.map((item, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-50 rounded-lg p-3">
-                    <div className="col-span-4">
+                  <div key={`${item.category}-${i}`} className="grid grid-cols-12 gap-2 items-center bg-gray-50 rounded-lg p-3">
+                    <div className="col-span-3">
                       <p className="text-sm font-medium text-gray-700">{item.category}</p>
                     </div>
                     <div className="col-span-3">
@@ -220,6 +285,11 @@ export default function HSSEPage() {
                         updated[i] = { ...updated[i], comments: e.target.value };
                         setForm({ ...form, checklist: updated });
                       }} />
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      <button type="button" onClick={() => handleRemoveCategory(i)} className="p-1 rounded hover:bg-red-100">
+                        <X size={14} className="text-red-400" />
+                      </button>
                     </div>
                   </div>
                 ))}

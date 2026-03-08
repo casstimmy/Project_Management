@@ -9,6 +9,7 @@ import EquipmentChecklist from "@/components/project/EquipmentChecklist";
 import GanttChart from "@/components/project/GanttChart";
 import BudgetVsActual from "@/components/project/BudgetVsActual";
 import WeeklyReport from "@/components/project/WeeklyReport";
+import ProjectAssets from "@/components/project/ProjectAssets";
 import ListView from "@/components/project/ListView";
 import Loader from "@/components/Loader";
 
@@ -168,7 +169,11 @@ const handleAddTask = async (newTask) => {
        {activeView === "gantt" && <GanttChart project={project} />}
 
         {activeView === "budget" && (
-          <BudgetVsActual data={project.budget || []} />
+          <BudgetVsActual data={project.budget || []} projectId={project._id} onUpdate={fetchProject} />
+        )}
+
+        {activeView === "assets" && (
+          <ProjectAssets project={project} onRefresh={fetchProject} />
         )}
 
         {activeView === "reports" && (

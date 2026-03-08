@@ -7,6 +7,7 @@ import {
   BarChart2,
   FileText,
   ArrowLeft,
+  Package,
 } from "lucide-react";
 
 export default function WorkspaceHeader({ project, activeView, onChangeView }) {
@@ -18,6 +19,7 @@ export default function WorkspaceHeader({ project, activeView, onChangeView }) {
     { id: "checklist", label: "Checklist", icon: ClipboardCheck },
     { id: "gantt", label: "Gantt", icon: BarChart2 },
     { id: "budget", label: "Budget", icon: FileText },
+    { id: "assets", label: "Assets", icon: Package },
     { id: "reports", label: "Reports", icon: FileText },
   ];
 

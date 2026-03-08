@@ -1,6 +1,7 @@
 // /pages/api/projects/[id].js
 import { mongooseConnect } from "@/lib/mongoose";
 import Project from "@/models/Project";
+import Asset from "@/models/Asset";
 
 export default async function handler(req, res) {
   await mongooseConnect();
@@ -13,7 +14,7 @@ export default async function handler(req, res) {
   switch (method) {
     case "GET":
       try {
-        const project = await Project.findById(id).populate("tasks");
+        const project = await Project.findById(id).populate("tasks").populate("assets");
         if (!project) {
           return res.status(404).json({ error: "Project not found." });
         }

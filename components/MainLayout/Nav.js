@@ -3,7 +3,7 @@ import { FaBell, FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { jwtDecode } from "jwt-decode";
+import { checkAuth } from "@/lib/checkAuth";
 import Sidebar from "./SideBar";
 import Link from "next/link";
 import { ROLE_LABELS } from "@/lib/constants";
@@ -23,16 +23,25 @@ export default function Nav({ children }) {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setUser(decoded);
-      } catch (err) {
-        console.error("Token decode error:", err);
-      }
+    const decoded = checkAuth();
+    if (decoded) {
+      setUser(decoded);
+    } else {
+      // Token missing or expired — redirect to login
+      router.push("/");
+      return;
     }
-  }, []);
+
+    // Periodic check every 60s for token expiry
+    const interval = setInterval(() => {
+      const stillValid = checkAuth();
+      if (!stillValid) {
+        router.push("/");
+      }
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");

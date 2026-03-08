@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/SharedComponents";
 import {
   Package, Plus, Edit, Trash2, QrCode, Download, Search,
-  Calendar, DollarSign, Wrench, AlertTriangle, Eye,
+  Calendar, DollarSign, Wrench, AlertTriangle, Eye, Upload, X, ImageIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError, toOptionalDate, toOptionalNumber, toOptionalObjectId } from "@/lib/clientApi";
@@ -29,10 +29,12 @@ export default function AssetsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDetail, setShowDetail] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(null);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [form, setForm] = useState({
@@ -42,7 +44,35 @@ export default function AssetsPage() {
     purchaseDate: "", installationDate: "", warrantyDate: "",
     usefulLife: "", purchaseCost: "", replacementCost: "", salvageValue: "",
     depreciationMethod: "straight-line", maintenanceStrategy: "PPM",
+    imageUrl: "",
   });
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please select an image file");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Image must be under 5MB");
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.links?.[0];
+        if (url) {
+          updateField("imageUrl", url);
+          toast.success("Image uploaded");
+        }
+      } else {
+        toast.error("Upload failed");
+      }
+    } catch {
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
@@ -91,6 +121,7 @@ export default function AssetsPage() {
     purchaseDate: "", installationDate: "", warrantyDate: "",
     usefulLife: "", purchaseCost: "", replacementCost: "", salvageValue: "",
     depreciationMethod: "straight-line", maintenanceStrategy: "PPM",
+    imageUrl: "",
   });
 
   const updateField = (key, value) => {
@@ -120,6 +151,7 @@ export default function AssetsPage() {
     salvageValue: toOptionalNumber(form.salvageValue),
     depreciationMethod: form.depreciationMethod,
     maintenanceStrategy: form.maintenanceStrategy,
+    imageUrl: form.imageUrl || undefined,
   });
 
   const handleSubmit = async () => {
@@ -175,6 +207,7 @@ export default function AssetsPage() {
       salvageValue: asset.salvageValue || "",
       depreciationMethod: asset.depreciationMethod || "straight-line",
       maintenanceStrategy: asset.maintenanceStrategy || "PPM",
+      imageUrl: asset.imageUrl || "",
     });
     setSubmitError("");
     setFieldErrors({});
@@ -185,6 +218,18 @@ export default function AssetsPage() {
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : "—";
 
   const columns = [
+    { header: "Image", render: (row) => (
+      row.imageUrl ? (
+        <button onClick={(e) => { e.stopPropagation(); setShowImageModal({ url: row.imageUrl, name: row.name }); }}
+          className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 transition cursor-pointer">
+          <img src={row.imageUrl} alt={row.name} className="w-full h-full object-cover" />
+        </button>
+      ) : (
+        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+          <ImageIcon size={16} className="text-gray-300" />
+        </div>
+      )
+    )},
     { header: "Asset", render: (row) => (
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -307,6 +352,28 @@ export default function AssetsPage() {
                 <FormField label="Description" className="md:col-span-2">
                   <Textarea rows={3} value={form.description} onChange={(e) => updateField("description", e.target.value)} />
                 </FormField>
+                <FormField label="Asset Image" className="md:col-span-2">
+                  <div className="flex items-center gap-4">
+                    {form.imageUrl ? (
+                      <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+                        <img src={form.imageUrl} alt="Asset" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => updateField("imageUrl", "")}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                        <ImageIcon size={24} className="text-gray-300" />
+                      </div>
+                    )}
+                    <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+                      <Upload size={16} />
+                      {uploading ? "Uploading..." : "Upload Image"}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+                    </label>
+                  </div>
+                </FormField>
               </div>
             )}
             {activeTab === "location" && (
@@ -369,6 +436,21 @@ export default function AssetsPage() {
         <Modal isOpen={!!showDetail} onClose={() => setShowDetail(null)} title={showDetail?.name || "Asset Detail"} size="xl">
           {showDetail && (
             <div className="space-y-6">
+              {/* Asset Image */}
+              {showDetail.imageUrl && (
+                <div className="flex justify-center">
+                  <button onClick={() => setShowImageModal({ url: showDetail.imageUrl, name: showDetail.name })}
+                    className="relative group rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 transition max-w-xs">
+                    <img src={showDetail.imageUrl} alt={showDetail.name} className="w-full h-48 object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full transition">
+                        Click to enlarge
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500">Asset Tag</p>
@@ -419,6 +501,25 @@ export default function AssetsPage() {
             </div>
           )}
         </Modal>
+
+        {/* Full-Size Image Modal */}
+        {showImageModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowImageModal(null)}>
+            <div className="relative max-w-4xl max-h-[90vh] m-4" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setShowImageModal(null)}
+                className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 z-10">
+                <X size={16} className="text-gray-600" />
+              </button>
+              <img
+                src={showImageModal.url}
+                alt={showImageModal.name}
+                className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain"
+              />
+              <p className="text-center text-white text-sm mt-3 font-medium">{showImageModal.name}</p>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

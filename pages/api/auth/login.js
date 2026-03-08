@@ -2,11 +2,15 @@ import { mongooseConnect } from "@/lib/mongoose";
 import User from "@/models/User";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { applyRateLimit, authLimiter } from "@/lib/rateLimit";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  // Strict rate limit on login: 10 attempts per minute per IP
+  if (!applyRateLimit(req, res, authLimiter, 10)) return;
 
   await mongooseConnect();
 

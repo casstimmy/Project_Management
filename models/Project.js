@@ -10,7 +10,7 @@ const responsibilitySchema = new Schema({
   role: String,
   responsibility: String,
 });
-const budgetSchema = new Schema({ category: String, amount: Number });
+const budgetSchema = new Schema({ category: String, amount: Number, actual: { type: Number, default: 0 } });
 const approvalSchema = new Schema({ name: String, role: String, date: Date });
 
 const projectSchema = new Schema(
@@ -22,6 +22,7 @@ const projectSchema = new Schema(
     objectives: [objectiveSchema],
     scope: String,
     tasks: [{ type: Schema.Types.ObjectId, ref: "Task" }],
+    assets: [{ type: Schema.Types.ObjectId, ref: "Asset" }],
     stakeholders: [stakeholderSchema],
     responsibilities: [responsibilitySchema],
     budget: [budgetSchema],
