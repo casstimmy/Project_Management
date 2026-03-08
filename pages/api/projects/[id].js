@@ -2,6 +2,8 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Project from "@/models/Project";
 import Asset from "@/models/Asset";
+import Site from "@/models/Site";
+import Building from "@/models/Building";
 
 export default async function handler(req, res) {
   await mongooseConnect();
@@ -14,7 +16,10 @@ export default async function handler(req, res) {
   switch (method) {
     case "GET":
       try {
-        const project = await Project.findById(id).populate("tasks").populate("assets");
+        const project = await Project.findById(id).populate("tasks").populate({
+          path: "assets",
+          populate: [{ path: "site", select: "name" }, { path: "building", select: "name" }],
+        });
         if (!project) {
           return res.status(404).json({ error: "Project not found." });
         }

@@ -169,7 +169,7 @@ const handleAddTask = async (newTask) => {
        {activeView === "gantt" && <GanttChart project={project} />}
 
         {activeView === "budget" && (
-          <BudgetVsActual data={project.budget || []} projectId={project._id} onUpdate={fetchProject} />
+          <BudgetVsActual data={project.budget || []} projectId={project._id} tasks={project.tasks || []} onUpdate={fetchProject} />
         )}
 
         {activeView === "assets" && (

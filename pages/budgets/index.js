@@ -287,7 +287,11 @@ export default function BudgetsPage() {
                   options={[{ value: "OPEX", label: "OPEX (Operational)" }, { value: "CAPEX", label: "CAPEX (Capital)" }]} />
               </FormField>
               <FormField label="Fiscal Year" error={fieldErrors.fiscalYear}>
-                <Input aria-invalid={!!fieldErrors.fiscalYear} value={form.fiscalYear} onChange={(e) => setForm({ ...form, fiscalYear: e.target.value })} />
+                <Select value={form.fiscalYear} onChange={(e) => setForm({ ...form, fiscalYear: e.target.value })}
+                  options={Array.from({ length: 11 }, (_, i) => {
+                    const y = new Date().getFullYear() - 5 + i;
+                    return { value: y.toString(), label: `FY ${y}` };
+                  })} />
               </FormField>
               <FormField label="Cost Center">
                 <Input value={form.costCenter} onChange={(e) => setForm({ ...form, costCenter: e.target.value })} placeholder="e.g., FM-OPS-001" />
@@ -377,6 +381,29 @@ export default function BudgetsPage() {
                     {formatCurrency(showDetail.totalVariance)}
                   </p>
                 </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/budgets?id=${showDetail._id}`, { method: "PATCH" });
+                      if (res.ok) {
+                        const data = await res.json();
+                        toast.success(`Synced actuals from ${data.projectCount} project(s)`);
+                        setShowDetail(null);
+                        fetchBudgets();
+                      } else {
+                        toast.error("Failed to sync");
+                      }
+                    } catch {
+                      toast.error("Failed to sync from projects");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-blue-300 rounded-lg text-blue-700 hover:bg-blue-50"
+                >
+                  <TrendingUp size={14} /> Sync Actuals from Projects
+                </button>
               </div>
 
               {showDetail.lineItems?.length > 0 && (

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Layout from "@/components/MainLayout/Layout";
-import Loader from "@/components/Loader";
+import Loader, { DashboardSkeleton } from "@/components/Loader";
 import { StatCard } from "@/components/ui/SharedComponents";
 import {
   Package, Wrench, ClipboardList, AlertOctagon, ShieldCheck,
@@ -78,7 +78,7 @@ export default function HomePage() {
   return (
     <Layout>
       {loading ? (
-        <Loader text="Loading dashboard..." />
+        <DashboardSkeleton />
       ) : (
       <div className="max-w-7xl mx-auto">
         {/* Welcome Banner */}

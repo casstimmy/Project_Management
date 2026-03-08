@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import axios from "axios";
 
-export default function EquipmentForm({ projectId, _id, onClose, onSave }) {
-  const [name, setName] = useState("");
-  const [details, setDetails] = useState("");
-  const [condition, setCondition] = useState("Good");
+export default function EquipmentForm({ projectId, _id, initialData, onClose, onSave }) {
+  const [name, setName] = useState(initialData?.name || "");
+  const [details, setDetails] = useState(initialData?.details || "");
+  const [condition, setCondition] = useState(initialData?.condition || "Good");
   const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState("");
+  const [preview, setPreview] = useState(initialData?.imageUrl || "");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);

@@ -66,45 +66,82 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
   };
 
   const renderProjectInfo = () => (
-    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-lg overflow-hidden mb-6 transition-all duration-300 hover:shadow-2xl">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full text-left p-4 flex justify-between items-center bg-white hover:bg-gray-100 focus:outline-none transition"
+        className="w-full text-left p-4 flex justify-between items-center hover:bg-gray-50 focus:outline-none transition"
       >
-        <h1 className="text-2xl font-bold text-gray-800">{project.title}</h1>
-        <span className="text-gray-600">{open ? "▲" : "▼"}</span>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">{project.title}</h1>
+          {project.purpose && <p className="text-sm text-gray-500 mt-0.5">{project.purpose}</p>}
+        </div>
+        <span className="text-gray-400 text-sm">{open ? "▲ Hide Details" : "▼ Show Details"}</span>
       </button>
 
       {open && (
-        <div className="p-4 space-y-2 border-t border-gray-200 bg-white">
-          {project.objectives?.length > 0 && (
-            <div>
-              <span className="font-semibold text-gray-700">Objectives:</span>
-              <ul className="list-disc list-inside text-sm text-gray-600 mt-1">
-                {project.objectives.map((o, i) => (
-                  <li key={i}>{o.text}</li>
-                ))}
-              </ul>
+        <div className="px-4 pb-4 border-t border-gray-100 space-y-4">
+          {project.scope && (
+            <div className="pt-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Scope</span>
+              <p className="text-sm text-gray-700 mt-1">{project.scope}</p>
             </div>
           )}
           {project.objectives?.length > 0 && (
             <div>
-              <span className="font-semibold text-gray-700">Deliverables:</span>
-              <ul className="list-disc list-inside text-sm text-gray-600 mt-1">
-                {project.objectives.map((o, i) => (
-                  <li key={i}>{`${o.text}`}</li>
-                ))}
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Objectives</span>
+              <ul className="list-disc list-inside text-sm text-gray-700 mt-1 space-y-0.5">
+                {project.objectives.map((o, i) => <li key={i}>{o.text}</li>)}
               </ul>
+            </div>
+          )}
+          {project.stakeholders?.length > 0 && (
+            <div>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Stakeholders</span>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                {project.stakeholders.map((s, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg px-3 py-2">
+                    <p className="text-sm font-medium text-gray-900">{s.name}</p>
+                    <p className="text-xs text-gray-500">{s.role}{s.contact ? ` • ${s.contact}` : ""}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {project.responsibilities?.length > 0 && (
+            <div>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Responsibilities</span>
+              <div className="mt-1 space-y-1">
+                {project.responsibilities.map((r, i) => (
+                  <div key={i} className="flex gap-2 text-sm">
+                    <span className="font-medium text-gray-800">{r.role}:</span>
+                    <span className="text-gray-600">{r.responsibility}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           {project.budget?.length > 0 && (
             <div>
-              <span className="font-semibold text-gray-700">Budget:</span>
-              <ul className="list-disc list-inside text-sm text-gray-600 mt-1">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Budget</span>
+              <div className="flex flex-wrap gap-2 mt-1">
                 {project.budget.map((b, i) => (
-                  <li key={i}>{`${b.category}: ₦${Number(b.amount).toLocaleString()}`}</li>
+                  <span key={i} className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
+                    {b.category}: ₦{Number(b.amount || 0).toLocaleString()}
+                  </span>
                 ))}
-              </ul>
+              </div>
+            </div>
+          )}
+          {project.risks && (
+            <div>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Risks</span>
+              <p className="text-sm text-gray-700 mt-1">{project.risks}</p>
+            </div>
+          )}
+          {project.assumptions && (
+            <div>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assumptions</span>
+              <p className="text-sm text-gray-700 mt-1">{project.assumptions}</p>
             </div>
           )}
         </div>

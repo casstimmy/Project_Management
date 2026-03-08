@@ -63,21 +63,6 @@ if (method === "PUT") {
   return res.json(updated);
 }
 
-
-    if (method === "PUT") {
-      const { _id, ...data } = req.body;
-      if (!_id) {
-        return res.status(400).json({ success: false, message: "Member ID is required" });
-      }
-
-      const updated = await Team.findByIdAndUpdate(_id, data, { new: true });
-      if (!updated) {
-        return res.status(404).json({ success: false, message: "Member not found" });
-      }
-
-      return res.json(updated);
-    }
-
  
     if (method === "DELETE") {
       const { id } = req.query;

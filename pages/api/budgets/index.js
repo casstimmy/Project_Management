@@ -2,6 +2,7 @@ import { mongooseConnect } from "@/lib/mongoose";
 import Budget from "@/models/Budget";
 import Site from "@/models/Site";
 import Building from "@/models/Building";
+import Project from "@/models/Project";
 import { sendApiError } from "@/lib/apiErrors";
 
 export default async function handler(req, res) {
@@ -65,6 +66,47 @@ export default async function handler(req, res) {
       Object.assign(budget, data);
       await budget.save();
       return res.json(budget);
+    }
+
+    if (method === "PATCH") {
+      // Sync actuals from projects for a specific budget
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: "Budget ID is required" });
+
+      const budget = await Budget.findById(id);
+      if (!budget) return res.status(404).json({ error: "Budget not found" });
+
+      // Find projects at the same site/building
+      const projectFilter = {};
+      if (budget.site) projectFilter.site = budget.site;
+
+      const projects = await Project.find(projectFilter);
+
+      // Aggregate project budget actuals by category
+      const projectActuals = {};
+      for (const proj of projects) {
+        for (const item of (proj.budget || [])) {
+          if (item.category) {
+            projectActuals[item.category] = (projectActuals[item.category] || 0) + (item.actual || 0);
+          }
+        }
+      }
+
+      // Update matching line items
+      let updated = false;
+      for (const lineItem of budget.lineItems) {
+        const matchedActual = projectActuals[lineItem.category];
+        if (matchedActual !== undefined) {
+          lineItem.actualAmount = matchedActual;
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        await budget.save();
+      }
+
+      return res.json({ success: true, budget, projectCount: projects.length });
     }
 
     if (method === "DELETE") {

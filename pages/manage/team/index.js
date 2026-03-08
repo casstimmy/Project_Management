@@ -1,16 +1,19 @@
 // pages/manage/team/index.js
 import { useEffect, useState } from "react";
-import { Trash2, Edit2, Plus, Search, User, Users } from "lucide-react";
+import { Trash2, Edit2, Plus, Search, User, Users, UserPlus } from "lucide-react";
 import Layout from "@/components/MainLayout/Layout";
 import Loader from "@/components/Loader";
 import { PageHeader, Button } from "@/components/ui/SharedComponents";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { jwtDecode } from "jwt-decode";
+import toast from "react-hot-toast";
 
 export default function ManageTeam() {
   const [team, setTeam] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [addingSelf, setAddingSelf] = useState(false);
   const router = useRouter();
 
   useEffect(() => { fetchTeam(); }, []);
@@ -24,6 +27,47 @@ export default function ManageTeam() {
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }
+
+  const getLoggedInUser = () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) return jwtDecode(token);
+    } catch {}
+    return null;
+  };
+
+  const handleAddSelf = async () => {
+    const user = getLoggedInUser();
+    if (!user) return toast.error("Could not get your info. Please log in again.");
+
+    // Check if already in team
+    const already = team.find(m => m.email?.toLowerCase() === user.email?.toLowerCase());
+    if (already) return toast.error("You are already in the team list");
+
+    setAddingSelf(true);
+    try {
+      const res = await fetch("/api/manage/team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: user.name || "Admin",
+          email: user.email || "",
+          role: user.role || "Admin",
+          type: "Worker",
+        }),
+      });
+      if (res.ok) {
+        toast.success("You have been added to the team");
+        fetchTeam();
+      } else {
+        toast.error("Failed to add yourself to the team");
+      }
+    } catch {
+      toast.error("Failed to add yourself to the team");
+    } finally {
+      setAddingSelf(false);
+    }
+  };
 
   const filteredTeam = team.filter(m =>
     m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,9 +83,18 @@ export default function ManageTeam() {
           subtitle="View and manage team members"
           breadcrumbs={[{ label: "Dashboard", href: "/homePage" }, { label: "Team" }]}
           actions={
-            <Link href="/manage/team/new">
-              <Button icon={<Plus size={16} />}>Add Member</Button>
-            </Link>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddSelf}
+                disabled={addingSelf}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <UserPlus size={16} /> {addingSelf ? "Adding..." : "Add Self"}
+              </button>
+              <Link href="/manage/team/new">
+                <Button icon={<Plus size={16} />}>Add Member</Button>
+              </Link>
+            </div>
           }
         />
 

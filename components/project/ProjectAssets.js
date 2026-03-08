@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Package, Plus, X, Eye, ImageIcon } from "lucide-react";
-import { Button, Modal, Select, FormField } from "@/components/ui/SharedComponents";
+import { Package, Plus, X, ImageIcon, MapPin } from "lucide-react";
+import { Button, Modal, FormField } from "@/components/ui/SharedComponents";
 import toast from "react-hot-toast";
 
 export default function ProjectAssets({ project, onRefresh }) {
@@ -15,12 +15,22 @@ export default function ProjectAssets({ project, onRefresh }) {
   useEffect(() => {
     fetch("/api/assets")
       .then((r) => r.json())
-      .then((d) => setAllAssets(d.assets || (Array.isArray(d) ? d : [])))
+      .then((d) => {
+        const list = d.assets || (Array.isArray(d) ? d : []);
+        setAllAssets(list);
+      })
       .catch(() => {});
   }, []);
 
   const linkedIds = new Set(assets.map((a) => a._id));
   const availableAssets = allAssets.filter((a) => !linkedIds.has(a._id));
+
+  const getAssetLocation = (asset) => {
+    const parts = [];
+    if (asset.site?.name) parts.push(asset.site.name);
+    if (asset.building?.name) parts.push(asset.building.name);
+    return parts.length > 0 ? parts.join(" > ") : "No location";
+  };
 
   const handleLink = async () => {
     if (!selectedAssetId) return toast.error("Select an asset");
@@ -100,6 +110,7 @@ export default function ProjectAssets({ project, onRefresh }) {
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Image</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Asset</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Location</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Strategy</th>
@@ -125,7 +136,13 @@ export default function ProjectAssets({ project, onRefresh }) {
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-sm font-medium text-gray-900">{asset.name}</p>
-                    <p className="text-xs text-gray-400">{asset.assetTag || "—"}</p>
+                    <p className="text-xs text-gray-400">{asset.assetTag || "No tag"}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <MapPin size={12} className="text-gray-400" />
+                      {getAssetLocation(asset)}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{asset.category}</td>
                   <td className="px-4 py-3">
@@ -172,15 +189,21 @@ export default function ProjectAssets({ project, onRefresh }) {
         }
       >
         <FormField label="Select Asset">
-          <Select
+          <select
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={selectedAssetId}
             onChange={(e) => setSelectedAssetId(e.target.value)}
-            placeholder="Choose an asset to link..."
-            options={availableAssets.map((a) => ({
-              value: a._id,
-              label: `${a.name} (${a.category}) — ${a.assetTag || "No tag"}`,
-            }))}
-          />
+          >
+            <option value="">Choose an asset to link...</option>
+            {availableAssets.map((a) => {
+              const loc = [a.site?.name, a.building?.name].filter(Boolean).join(" > ");
+              return (
+                <option key={a._id} value={a._id}>
+                  {a.name} — {a.assetTag || "No tag"}{loc ? ` — ${loc}` : ""} ({a.category})
+                </option>
+              );
+            })}
+          </select>
         </FormField>
         {availableAssets.length === 0 && (
           <p className="text-sm text-gray-500 mt-2">All assets are already linked or no assets exist.</p>
