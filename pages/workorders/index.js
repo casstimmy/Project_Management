@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge, PriorityBadge,
-  Button, Modal, FormField, Input, Select, Textarea, Tabs,
+  Button, Modal, FormField, Input, Select, Textarea, Tabs, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   ClipboardList, Plus, Edit, Trash2, Eye, Clock,
   User, AlertTriangle, Wrench, Calendar,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 const WO_TYPES = [
   { value: "preventive", label: "Preventive" }, { value: "predictive", label: "Predictive" },
@@ -44,6 +45,9 @@ export default function WorkOrdersPage() {
     estimatedHours: "", actualHours: "", downtime: "",
     laborCost: "", materialCost: "",
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     fetch("/api/assets").then(r => r.json()).then(d => setAssets(d.assets || (Array.isArray(d) ? d : [])));
@@ -76,6 +80,9 @@ export default function WorkOrdersPage() {
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/workorders", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
@@ -83,10 +90,17 @@ export default function WorkOrdersPage() {
         toast.success(editing ? "Work order updated" : "Work order created");
         setShowModal(false); setEditing(null); resetForm(); fetchWO();
       } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to save");
+        const err = await readApiError(res, "Failed to save work order");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
       }
-    } catch { toast.error("Something went wrong"); }
+    } catch {
+      setSubmitError("Something went wrong while saving this work order.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -188,11 +202,12 @@ export default function WorkOrdersPage() {
         {/* Create / Edit Modal */}
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); }}
           title={editing ? "Edit Work Order" : "New Work Order"} size="xl"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSubmit}>{editing ? "Update" : "Create"}</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : (editing ? "Update" : "Create")}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Title" required className="md:col-span-2">
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Brief description of work required" />
+            <FormField label="Title" required className="md:col-span-2" error={fieldErrors.title}>
+              <Input aria-invalid={!!fieldErrors.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Brief description of work required" />
             </FormField>
             <FormField label="Type">
               <Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} options={WO_TYPES} />
@@ -203,8 +218,8 @@ export default function WorkOrdersPage() {
             <FormField label="Status">
               <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={WO_STATUSES} />
             </FormField>
-            <FormField label="Asset">
-              <Select value={form.asset} onChange={(e) => setForm({ ...form, asset: e.target.value })}
+            <FormField label="Asset" error={fieldErrors.asset}>
+              <Select aria-invalid={!!fieldErrors.asset} value={form.asset} onChange={(e) => setForm({ ...form, asset: e.target.value })}
                 placeholder="Select asset" options={assets.map(a => ({ value: a._id, label: `${a.name} (${a.assetTag || "—"})` }))} />
             </FormField>
             <FormField label="Scheduled Date">

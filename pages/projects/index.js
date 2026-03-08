@@ -4,13 +4,14 @@ import Link from "next/link";
 import Layout from "@/components/MainLayout/Layout";
 import Loader from "@/components/Loader";
 import {
-  PageHeader, StatCard, Button, Modal, FormField, Input, Select, Textarea,
+  PageHeader, StatCard, Button, Modal, FormField, Input, Select, Textarea, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   FolderKanban, Plus, Edit, Trash2, Users,
   Calendar, Target, ArrowRight, Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -24,6 +25,9 @@ export default function ProjectsPage() {
     title: "", purpose: "", scope: "", site: "",
     risks: "", assumptions: "",
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -71,6 +75,9 @@ export default function ProjectsPage() {
     const body = editing ? { ...form } : { spaceId, ...form };
 
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -83,10 +90,16 @@ export default function ProjectsPage() {
         setEditing(null);
         fetchProjects();
       } else {
-        toast.error("Operation failed");
+        const err = await readApiError(res, "Operation failed");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
       }
     } catch (err) {
+      setSubmitError("Something went wrong while saving this project.");
       toast.error("Operation failed");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -190,12 +203,13 @@ export default function ProjectsPage() {
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); resetForm(); }}
           title={editing ? "Edit Project" : "New Project"} size="lg"
           footer={<div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => { setShowModal(false); setEditing(null); resetForm(); }}>Cancel</Button>
-            <Button onClick={handleSubmit}>{editing ? "Update" : "Create"} Project</Button>
+            <Button variant="outline" onClick={() => { setShowModal(false); setEditing(null); resetForm(); }} disabled={saving}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : `${editing ? "Update" : "Create"} Project`}</Button>
           </div>}>
+          <FormAlert message={submitError} />
           <div className="space-y-4">
-            <FormField label="Project Title" required>
-              <Input placeholder="e.g. HVAC Upgrade Phase 2" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <FormField label="Project Title" required error={fieldErrors.title}>
+              <Input aria-invalid={!!fieldErrors.title} placeholder="e.g. HVAC Upgrade Phase 2" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </FormField>
             <FormField label="Purpose / Description">
               <Textarea placeholder="What is this project about?" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} rows={3} />

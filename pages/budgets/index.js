@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
-  Button, Modal, FormField, Input, Select, Textarea, Tabs,
+  Button, Modal, FormField, Input, Select, Textarea, Tabs, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   DollarSign, Plus, Edit, Trash2, Eye, TrendingUp,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as ReChart, Pie, Cell } from "recharts";
+import { readApiError } from "@/lib/clientApi";
 
 const OPEX_CATEGORIES = [
   "Utilities", "Cleaning", "Security", "Landscaping", "Waste Management",
@@ -38,6 +39,9 @@ export default function BudgetsPage() {
     site: "", costCenter: "", status: "draft", notes: "",
     lineItems: [{ description: "", category: "", budgetedAmount: 0, actualAmount: 0 }],
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true);
@@ -62,14 +66,27 @@ export default function BudgetsPage() {
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/budgets", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Budget updated" : "Budget created");
         setShowModal(false); setEditing(null); resetForm(); fetchBudgets();
-      } else { toast.error("Failed to save"); }
-    } catch { toast.error("Something went wrong"); }
+      } else {
+        const err = await readApiError(res, "Failed to save budget");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
+      }
+    } catch {
+      setSubmitError("Something went wrong while saving this budget.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -179,19 +196,20 @@ export default function BudgetsPage() {
         {/* Create Modal */}
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); }}
           title={editing ? "Edit Budget" : "New Budget"} size="xl"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSubmit}>{editing ? "Update" : "Create"}</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : (editing ? "Update" : "Create")}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Title" required className="md:col-span-2">
-                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., FY2025 Building Maintenance OPEX" />
+              <FormField label="Title" required className="md:col-span-2" error={fieldErrors.title}>
+                <Input aria-invalid={!!fieldErrors.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., FY2025 Building Maintenance OPEX" />
               </FormField>
               <FormField label="Budget Type">
                 <Select value={form.budgetType} onChange={(e) => setForm({ ...form, budgetType: e.target.value })}
                   options={[{ value: "OPEX", label: "OPEX (Operational)" }, { value: "CAPEX", label: "CAPEX (Capital)" }]} />
               </FormField>
-              <FormField label="Fiscal Year">
-                <Input value={form.fiscalYear} onChange={(e) => setForm({ ...form, fiscalYear: e.target.value })} />
+              <FormField label="Fiscal Year" error={fieldErrors.fiscalYear}>
+                <Input aria-invalid={!!fieldErrors.fiscalYear} value={form.fiscalYear} onChange={(e) => setForm({ ...form, fiscalYear: e.target.value })} />
               </FormField>
               <FormField label="Cost Center">
                 <Input value={form.costCenter} onChange={(e) => setForm({ ...form, costCenter: e.target.value })} placeholder="e.g., FM-OPS-001" />

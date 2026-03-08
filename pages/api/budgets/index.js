@@ -1,5 +1,8 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Budget from "@/models/Budget";
+import Site from "@/models/Site";
+import Building from "@/models/Building";
+import { sendApiError } from "@/lib/apiErrors";
 
 export default async function handler(req, res) {
   await mongooseConnect();
@@ -70,6 +73,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: `Method ${method} not allowed` });
   } catch (error) {
     console.error("Budgets API error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return sendApiError(res, error, "Unable to save budget");
   }
 }

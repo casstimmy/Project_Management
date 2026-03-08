@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
-  Button, Modal, FormField, Input, Select, Textarea,
+  Button, Modal, FormField, Input, Select, Textarea, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   Settings, Plus, Edit, Trash2, Calendar, Wrench,
@@ -10,12 +10,13 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { readApiError } from "@/lib/clientApi";
 
 const FREQUENCIES = [
   { value: "daily", label: "Daily" }, { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Bi-Weekly" }, { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" }, { value: "semi-annually", label: "Semi-Annually" },
-  { value: "annually", label: "Annually" },
+  { value: "bi-weekly", label: "Bi-Weekly" }, { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" }, { value: "semi-annual", label: "Semi-Annual" },
+  { value: "annual", label: "Annual" }, { value: "custom", label: "Custom" },
 ];
 
 const MAINTENANCE_TYPES = [
@@ -37,6 +38,9 @@ export default function MaintenancePage() {
     nextDueDate: "", estimatedCost: "", actualCost: "",
     documents: [],
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [uploading, setUploading] = useState(false);
 
@@ -69,14 +73,27 @@ export default function MaintenancePage() {
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/maintenance", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Plan updated" : "Plan created");
         setShowModal(false); setEditing(null); resetForm(); fetchPlans();
-      } else { toast.error("Failed to save"); }
-    } catch { toast.error("Something went wrong"); }
+      } else {
+        const err = await readApiError(res, "Failed to save maintenance plan");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
+      }
+    } catch {
+      setSubmitError("Something went wrong while saving this maintenance plan.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -161,21 +178,22 @@ export default function MaintenancePage() {
 
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); }}
           title={editing ? "Edit Plan" : "New Maintenance Plan"} size="lg"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSubmit}>{editing ? "Update" : "Create"}</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : (editing ? "Update" : "Create")}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Plan Title" required className="md:col-span-2">
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Monthly HVAC Filter Change" />
+            <FormField label="Plan Title" required className="md:col-span-2" error={fieldErrors.title}>
+              <Input aria-invalid={!!fieldErrors.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Monthly HVAC Filter Change" />
             </FormField>
-            <FormField label="Asset">
-              <Select value={form.asset} onChange={(e) => setForm({ ...form, asset: e.target.value })}
+            <FormField label="Asset" error={fieldErrors.asset}>
+              <Select aria-invalid={!!fieldErrors.asset} value={form.asset} onChange={(e) => setForm({ ...form, asset: e.target.value })}
                 placeholder="Select asset" options={assets.map(a => ({ value: a._id, label: a.name }))} />
             </FormField>
-            <FormField label="Maintenance Type">
-              <Select value={form.maintenanceType} onChange={(e) => setForm({ ...form, maintenanceType: e.target.value })} options={MAINTENANCE_TYPES} />
+            <FormField label="Maintenance Type" error={fieldErrors.maintenanceType}>
+              <Select aria-invalid={!!fieldErrors.maintenanceType} value={form.maintenanceType} onChange={(e) => setForm({ ...form, maintenanceType: e.target.value })} options={MAINTENANCE_TYPES} />
             </FormField>
-            <FormField label="Frequency">
-              <Select value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })} options={FREQUENCIES} />
+            <FormField label="Frequency" error={fieldErrors.frequency}>
+              <Select aria-invalid={!!fieldErrors.frequency} value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })} options={FREQUENCIES} />
             </FormField>
             <FormField label="Next Due Date">
               <Input type="date" value={form.nextDueDate} onChange={(e) => setForm({ ...form, nextDueDate: e.target.value })} />

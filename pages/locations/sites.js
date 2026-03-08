@@ -3,13 +3,14 @@ import { useRouter } from "next/router";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
-  Button, Modal, FormField, Input, Select, Textarea, EmptyState,
+  Button, Modal, FormField, Input, Select, Textarea, EmptyState, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   MapPin, Plus, Building2, Phone, Mail,
   Globe, Edit, Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 export default function SitesPage() {
   const router = useRouter();
@@ -23,6 +24,9 @@ export default function SitesPage() {
     contactPerson: "", contactPhone: "", contactEmail: "", totalArea: "",
     address: { street: "", city: "", state: "", country: "", postalCode: "" },
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const fetchSites = useCallback(async () => {
     setLoading(true);
@@ -42,6 +46,9 @@ export default function SitesPage() {
   const handleSubmit = async () => {
     if (!form.name) return toast.error("Site name is required");
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const method = editingSite ? "PUT" : "POST";
       const body = editingSite ? { ...form, _id: editingSite._id } : form;
       const res = await fetch("/api/sites", {
@@ -56,11 +63,16 @@ export default function SitesPage() {
         resetForm();
         fetchSites();
       } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to save");
+        const err = await readApiError(res, "Failed to save site");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
       }
     } catch (err) {
+      setSubmitError("Something went wrong while saving this site.");
       toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -161,14 +173,15 @@ export default function SitesPage() {
           size="lg"
           footer={
             <>
-              <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
-              <Button onClick={handleSubmit}>{editingSite ? "Update" : "Create"} Site</Button>
+              <Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : `${editingSite ? "Update" : "Create"} Site`}</Button>
             </>
           }
         >
+          <FormAlert message={submitError} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Site Name" required>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Head Office Complex" />
+            <FormField label="Site Name" required error={fieldErrors.name}>
+              <Input aria-invalid={!!fieldErrors.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Head Office Complex" />
             </FormField>
             <FormField label="Site Code">
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="e.g., HQ-001" />
@@ -190,8 +203,8 @@ export default function SitesPage() {
             <FormField label="Contact Phone">
               <Input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
             </FormField>
-            <FormField label="Contact Email">
-              <Input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
+            <FormField label="Contact Email" error={fieldErrors.contactEmail}>
+              <Input aria-invalid={!!fieldErrors.contactEmail} type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
             </FormField>
             <FormField label="City">
               <Input value={form.address.city} onChange={(e) => setForm({ ...form, address: { ...form.address, city: e.target.value } })} />

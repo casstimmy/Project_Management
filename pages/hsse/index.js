@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
-  Button, Modal, FormField, Input, Select, Textarea,
+  Button, Modal, FormField, Input, Select, Textarea, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   ShieldCheck, Plus, Edit, Trash2, Eye, AlertTriangle,
   CheckCircle, XCircle, BarChart3,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 const AUDIT_TYPES = [
   { value: "health-safety", label: "Health & Safety" }, { value: "security", label: "Security" },
@@ -37,6 +38,9 @@ export default function HSSEPage() {
     checklist: HSSE_CATEGORIES.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
     risks: [],
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
@@ -67,14 +71,27 @@ export default function HSSEPage() {
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/hsse", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Audit updated" : "Audit created");
         setShowModal(false); setEditing(null); resetForm(); fetchAudits();
-      } else { toast.error("Failed to save"); }
-    } catch { toast.error("Something went wrong"); }
+      } else {
+        const err = await readApiError(res, "Failed to save HSSE audit");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
+      }
+    } catch {
+      setSubmitError("Something went wrong while saving this HSSE audit.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -147,15 +164,16 @@ export default function HSSEPage() {
         {/* Create Modal */}
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); }}
           title="HSSE Audit" size="xl"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSubmit}>Save Audit</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : "Save Audit"}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Audit Title" required className="md:col-span-2">
-                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Q1 2025 Comprehensive HSSE Audit" />
+              <FormField label="Audit Title" required className="md:col-span-2" error={fieldErrors.title}>
+                <Input aria-invalid={!!fieldErrors.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Q1 2025 Comprehensive HSSE Audit" />
               </FormField>
-              <FormField label="Site" required>
-                <Select value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })}
+              <FormField label="Site" required error={fieldErrors.site}>
+                <Select aria-invalid={!!fieldErrors.site} value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })}
                   placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
               </FormField>
               <FormField label="Building">
@@ -168,8 +186,8 @@ export default function HSSEPage() {
               <FormField label="Audit Date">
                 <Input type="date" value={form.auditDate} onChange={(e) => setForm({ ...form, auditDate: e.target.value })} />
               </FormField>
-              <FormField label="Auditor" required>
-                <Input value={form.auditor} onChange={(e) => setForm({ ...form, auditor: e.target.value })} placeholder="Auditor name" />
+              <FormField label="Auditor" required error={fieldErrors.auditor}>
+                <Input aria-invalid={!!fieldErrors.auditor} value={form.auditor} onChange={(e) => setForm({ ...form, auditor: e.target.value })} placeholder="Auditor name" />
               </FormField>
               <FormField label="Status">
                 <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}

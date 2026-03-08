@@ -293,6 +293,21 @@ export function Button({ children, variant = "primary", size = "md", icon, onCli
   );
 }
 
+export function FormAlert({ message, tone = "error" }) {
+  if (!message) return null;
+
+  const tones = {
+    error: "border-red-200 bg-red-50 text-red-700",
+    info: "border-blue-200 bg-blue-50 text-blue-700",
+  };
+
+  return (
+    <div className={`rounded-lg border px-4 py-3 text-sm ${tones[tone] || tones.error}`}>
+      {message}
+    </div>
+  );
+}
+
 /**
  * Form input
  */
@@ -317,7 +332,7 @@ export function FormField({ label, required, error, children, className = "" }) 
 export function Input({ className = "", ...props }) {
   return (
     <input
-      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400 ${className}`}
+      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
       {...props}
     />
   );
@@ -329,7 +344,7 @@ export function Input({ className = "", ...props }) {
 export function Select({ options, placeholder, className = "", ...props }) {
   return (
     <select
-      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${className}`}
+      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
       {...props}
     >
       {placeholder && <option value="">{placeholder}</option>}
@@ -348,7 +363,7 @@ export function Select({ options, placeholder, className = "", ...props }) {
 export function Textarea({ className = "", ...props }) {
   return (
     <textarea
-      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none placeholder:text-gray-400 ${className}`}
+      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
       {...props}
     />
   );

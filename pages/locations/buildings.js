@@ -3,10 +3,11 @@ import { useRouter } from "next/router";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
-  Button, Modal, FormField, Input, Select, Textarea,
+  Button, Modal, FormField, Input, Select, Textarea, FormAlert,
 } from "@/components/ui/SharedComponents";
 import { Building2, Plus, Edit, Trash2, Layers } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 export default function BuildingsPage() {
   const router = useRouter();
@@ -21,6 +22,9 @@ export default function BuildingsPage() {
     siteId: "", name: "", code: "", type: "office", floors: 1,
     totalArea: "", yearBuilt: "", description: "", status: "operational",
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
@@ -43,13 +47,28 @@ export default function BuildingsPage() {
     if (!form.name || !form.siteId) return toast.error("Name and site are required");
     const method = editing ? "PUT" : "POST";
     const body = editing ? { ...form, _id: editing._id } : form;
-    const res = await fetch("/api/buildings", {
-      method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-    });
-    if (res.ok) {
-      toast.success(editing ? "Updated" : "Created");
-      setShowModal(false); setEditing(null); fetchBuildings();
-    } else { toast.error("Failed"); }
+    try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
+      const res = await fetch("/api/buildings", {
+        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        toast.success(editing ? "Updated" : "Created");
+        setShowModal(false); setEditing(null); fetchBuildings();
+      } else {
+        const err = await readApiError(res, "Failed to save building");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
+      }
+    } catch {
+      setSubmitError("Something went wrong while saving this building.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -101,14 +120,15 @@ export default function BuildingsPage() {
         <DataTable columns={columns} data={buildings} loading={loading} onSearch={setSearch} searchValue={search} searchPlaceholder="Search buildings..." />
 
         <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? "Edit Building" : "Add Building"} size="lg"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSubmit}>{editing ? "Update" : "Create"}</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : (editing ? "Update" : "Create")}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Site" required>
-              <Select value={form.siteId} onChange={(e) => setForm({ ...form, siteId: e.target.value })} placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
+            <FormField label="Site" required error={fieldErrors.site}>
+              <Select aria-invalid={!!fieldErrors.site} value={form.siteId} onChange={(e) => setForm({ ...form, siteId: e.target.value })} placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
             </FormField>
-            <FormField label="Building Name" required>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Main Office Block" />
+            <FormField label="Building Name" required error={fieldErrors.name}>
+              <Input aria-invalid={!!fieldErrors.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Main Office Block" />
             </FormField>
             <FormField label="Code"><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></FormField>
             <FormField label="Type">

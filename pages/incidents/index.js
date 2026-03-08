@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge, PriorityBadge,
-  Button, Modal, FormField, Input, Select, Textarea,
+  Button, Modal, FormField, Input, Select, Textarea, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   AlertOctagon, Plus, Edit, Trash2, Eye, AlertTriangle,
   Users, Calendar, Shield,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 const INCIDENT_TYPES = [
   { value: "injury", label: "Injury" }, { value: "near-miss", label: "Near Miss" },
@@ -20,7 +21,6 @@ const INCIDENT_TYPES = [
 const SEVERITIES = [
   { value: "minor", label: "Minor" }, { value: "moderate", label: "Moderate" },
   { value: "major", label: "Major" }, { value: "critical", label: "Critical" },
-  { value: "fatal", label: "Fatal" },
 ];
 
 export default function IncidentsPage() {
@@ -38,6 +38,9 @@ export default function IncidentsPage() {
     personsInvolved: "", witnesses: "",
     rootCause: "", correctiveAction: "", preventiveAction: "",
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
@@ -69,14 +72,27 @@ export default function IncidentsPage() {
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/incidents", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Incident updated" : "Incident reported");
         setShowModal(false); setEditing(null); resetForm(); fetchIncidents();
-      } else { toast.error("Failed to save"); }
-    } catch { toast.error("Something went wrong"); }
+      } else {
+        const err = await readApiError(res, "Failed to save incident");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
+      }
+    } catch {
+      setSubmitError("Something went wrong while saving this incident.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -163,17 +179,18 @@ export default function IncidentsPage() {
         {/* Create / Edit Modal */}
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); }}
           title={editing ? "Edit Incident" : "Report Incident"} size="xl"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button variant="danger" onClick={handleSubmit}>{editing ? "Update" : "Report"}</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button variant="danger" onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : (editing ? "Update" : "Report")}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Incident Title" required className="md:col-span-2">
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Brief description" />
+            <FormField label="Incident Title" required className="md:col-span-2" error={fieldErrors.title}>
+              <Input aria-invalid={!!fieldErrors.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Brief description" />
             </FormField>
             <FormField label="Type">
               <Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} options={INCIDENT_TYPES} />
             </FormField>
-            <FormField label="Severity">
-              <Select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })} options={SEVERITIES} />
+            <FormField label="Severity" error={fieldErrors.severity}>
+              <Select aria-invalid={!!fieldErrors.severity} value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })} options={SEVERITIES} />
             </FormField>
             <FormField label="Site">
               <Select value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })}
@@ -185,8 +202,8 @@ export default function IncidentsPage() {
             <FormField label="Location / Area">
               <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Specific location" />
             </FormField>
-            <FormField label="Reported By" required>
-              <Input value={form.reportedBy} onChange={(e) => setForm({ ...form, reportedBy: e.target.value })} placeholder="Name of person reporting" />
+            <FormField label="Reported By" required error={fieldErrors.reportedBy}>
+              <Input aria-invalid={!!fieldErrors.reportedBy} value={form.reportedBy} onChange={(e) => setForm({ ...form, reportedBy: e.target.value })} placeholder="Name of person reporting" />
             </FormField>
             <FormField label="Status">
               <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}

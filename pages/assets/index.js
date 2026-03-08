@@ -3,32 +3,21 @@ import { useRouter } from "next/router";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge, PriorityBadge,
-  Button, Modal, FormField, Input, Select, Textarea, Tabs,
+  Button, Modal, FormField, Input, Select, Textarea, Tabs, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   Package, Plus, Edit, Trash2, QrCode, Download, Search,
   Calendar, DollarSign, Wrench, AlertTriangle, Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
-
-const ASSET_CATEGORIES = [
-  "HVAC", "Electrical", "Plumbing", "Fire Safety", "Elevator/Escalator",
-  "Structural", "IT/Network", "Security", "Furniture", "Landscaping",
-  "Cleaning Equipment", "Kitchen/Catering", "Medical", "Transport", "Other",
-];
+import { readApiError, toOptionalDate, toOptionalNumber, toOptionalObjectId } from "@/lib/clientApi";
+import { ASSET_CATEGORIES, MAINTENANCE_STRATEGIES } from "@/lib/constants";
 
 const STATUSES = [
   { value: "in-service", label: "In Service" },
   { value: "out-of-service", label: "Out of Service" },
-  { value: "under-maintenance", label: "Under Maintenance" },
+  { value: "pending-installation", label: "Pending Installation" },
   { value: "disposed", label: "Disposed" },
-  { value: "in-storage", label: "In Storage" },
-];
-
-const MAINTENANCE_STRATEGIES = [
-  { value: "RTF", label: "Run to Failure" },
-  { value: "PPM", label: "Planned Preventive" },
-  { value: "PdM", label: "Predictive" },
 ];
 
 export default function AssetsPage() {
@@ -36,18 +25,22 @@ export default function AssetsPage() {
   const [assets, setAssets] = useState([]);
   const [sites, setSites] = useState([]);
   const [buildings, setBuildings] = useState([]);
+  const [facilitySpaces, setFacilitySpaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDetail, setShowDetail] = useState(null);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [form, setForm] = useState({
     name: "", description: "", category: "HVAC", status: "in-service",
     site: "", building: "", facilitySpace: "",
     model: "", serialNumber: "", manufacturer: "", internalRefNumber: "",
-    purchaseDate: "", installationDate: "", warrantyExpiryDate: "",
-    usefulLifeYears: "", purchaseCost: "", replacementCost: "", salvageValue: "",
+    purchaseDate: "", installationDate: "", warrantyDate: "",
+    usefulLife: "", purchaseCost: "", replacementCost: "", salvageValue: "",
     depreciationMethod: "straight-line", maintenanceStrategy: "PPM",
   });
 
@@ -58,8 +51,25 @@ export default function AssetsPage() {
   useEffect(() => {
     if (form.site) {
       fetch(`/api/buildings?siteId=${form.site}`).then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
+    } else {
+      setBuildings([]);
     }
   }, [form.site]);
+
+  useEffect(() => {
+    if (form.building) {
+      fetch(`/api/facility-spaces?buildingId=${form.building}`).then(r => r.json()).then(d => setFacilitySpaces(Array.isArray(d) ? d : []));
+    } else {
+      setFacilitySpaces([]);
+    }
+  }, [form.building]);
+
+  useEffect(() => {
+    if (!showModal) {
+      setSubmitError("");
+      setFieldErrors({});
+    }
+  }, [showModal]);
 
   const fetchAssets = useCallback(async () => {
     setLoading(true);
@@ -78,16 +88,48 @@ export default function AssetsPage() {
     name: "", description: "", category: "HVAC", status: "in-service",
     site: "", building: "", facilitySpace: "",
     model: "", serialNumber: "", manufacturer: "", internalRefNumber: "",
-    purchaseDate: "", installationDate: "", warrantyExpiryDate: "",
-    usefulLifeYears: "", purchaseCost: "", replacementCost: "", salvageValue: "",
+    purchaseDate: "", installationDate: "", warrantyDate: "",
+    usefulLife: "", purchaseCost: "", replacementCost: "", salvageValue: "",
     depreciationMethod: "straight-line", maintenanceStrategy: "PPM",
+  });
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    setSubmitError("");
+  };
+
+  const payloadFromForm = () => ({
+    name: form.name.trim(),
+    description: form.description.trim(),
+    category: form.category,
+    status: form.status,
+    site: toOptionalObjectId(form.site),
+    building: toOptionalObjectId(form.building),
+    facilitySpace: toOptionalObjectId(form.facilitySpace),
+    model: form.model.trim(),
+    serialNumber: form.serialNumber.trim(),
+    manufacturer: form.manufacturer.trim(),
+    internalRefNumber: form.internalRefNumber.trim(),
+    purchaseDate: toOptionalDate(form.purchaseDate),
+    installationDate: toOptionalDate(form.installationDate),
+    warrantyDate: toOptionalDate(form.warrantyDate),
+    usefulLife: toOptionalNumber(form.usefulLife),
+    purchaseCost: toOptionalNumber(form.purchaseCost),
+    replacementCost: toOptionalNumber(form.replacementCost),
+    salvageValue: toOptionalNumber(form.salvageValue),
+    depreciationMethod: form.depreciationMethod,
+    maintenanceStrategy: form.maintenanceStrategy,
   });
 
   const handleSubmit = async () => {
     if (!form.name || !form.category) return toast.error("Name and category are required");
     const method = editing ? "PUT" : "POST";
-    const payload = editing ? { ...form, _id: editing._id } : form;
+    const payload = editing ? { ...payloadFromForm(), _id: editing._id } : payloadFromForm();
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/assets", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
@@ -95,10 +137,17 @@ export default function AssetsPage() {
         toast.success(editing ? "Asset updated" : "Asset created");
         setShowModal(false); setEditing(null); resetForm(); fetchAssets();
       } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to save asset");
+        const err = await readApiError(res, "Failed to save asset");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
       }
-    } catch { toast.error("Something went wrong"); }
+    } catch {
+      setSubmitError("Something went wrong while saving this asset.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -120,13 +169,15 @@ export default function AssetsPage() {
       manufacturer: asset.manufacturer || "", internalRefNumber: asset.internalRefNumber || "",
       purchaseDate: asset.purchaseDate?.split("T")[0] || "",
       installationDate: asset.installationDate?.split("T")[0] || "",
-      warrantyExpiryDate: asset.warrantyExpiryDate?.split("T")[0] || "",
-      usefulLifeYears: asset.usefulLifeYears || "",
+      warrantyDate: asset.warrantyDate?.split("T")[0] || "",
+      usefulLife: asset.usefulLife || "",
       purchaseCost: asset.purchaseCost || "", replacementCost: asset.replacementCost || "",
       salvageValue: asset.salvageValue || "",
       depreciationMethod: asset.depreciationMethod || "straight-line",
       maintenanceStrategy: asset.maintenanceStrategy || "PPM",
     });
+    setSubmitError("");
+    setFieldErrors({});
     setShowModal(true);
   };
 
@@ -212,11 +263,12 @@ export default function AssetsPage() {
           size="xl"
           footer={
             <>
-              <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
-              <Button onClick={handleSubmit}>{editing ? "Update" : "Create"} Asset</Button>
+              <Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : `${editing ? "Update" : "Create"} Asset`}</Button>
             </>
           }
         >
+          <FormAlert message={submitError} />
           <Tabs
             tabs={[
               { id: "details", label: "Details" },
@@ -230,78 +282,82 @@ export default function AssetsPage() {
           <div className="mt-4">
             {activeTab === "details" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Asset Name" required>
-                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., AHU-01 Supply Fan" />
+                <FormField label="Asset Name" required error={fieldErrors.name}>
+                  <Input aria-invalid={!!fieldErrors.name} value={form.name} onChange={(e) => updateField("name", e.target.value)} placeholder="e.g., AHU-01 Supply Fan" />
                 </FormField>
-                <FormField label="Category" required>
-                  <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+                <FormField label="Category" required error={fieldErrors.category}>
+                  <Select aria-invalid={!!fieldErrors.category} value={form.category} onChange={(e) => updateField("category", e.target.value)}
                     options={ASSET_CATEGORIES.map(c => ({ value: c, label: c }))} />
                 </FormField>
-                <FormField label="Status">
-                  <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUSES} />
+                <FormField label="Status" error={fieldErrors.status}>
+                  <Select aria-invalid={!!fieldErrors.status} value={form.status} onChange={(e) => updateField("status", e.target.value)} options={STATUSES} />
                 </FormField>
                 <FormField label="Manufacturer">
-                  <Input value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} />
+                  <Input value={form.manufacturer} onChange={(e) => updateField("manufacturer", e.target.value)} />
                 </FormField>
                 <FormField label="Model">
-                  <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+                  <Input value={form.model} onChange={(e) => updateField("model", e.target.value)} />
                 </FormField>
                 <FormField label="Serial Number">
-                  <Input value={form.serialNumber} onChange={(e) => setForm({ ...form, serialNumber: e.target.value })} />
+                  <Input value={form.serialNumber} onChange={(e) => updateField("serialNumber", e.target.value)} />
                 </FormField>
                 <FormField label="Internal Ref Number">
-                  <Input value={form.internalRefNumber} onChange={(e) => setForm({ ...form, internalRefNumber: e.target.value })} />
+                  <Input value={form.internalRefNumber} onChange={(e) => updateField("internalRefNumber", e.target.value)} />
                 </FormField>
                 <FormField label="Description" className="md:col-span-2">
-                  <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                  <Textarea rows={3} value={form.description} onChange={(e) => updateField("description", e.target.value)} />
                 </FormField>
               </div>
             )}
             {activeTab === "location" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Site">
-                  <Select value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value, building: "" })}
+                <FormField label="Site" error={fieldErrors.site}>
+                  <Select aria-invalid={!!fieldErrors.site} value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value, building: "", facilitySpace: "" })}
                     placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
                 </FormField>
-                <FormField label="Building">
-                  <Select value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value })}
+                <FormField label="Building" error={fieldErrors.building}>
+                  <Select aria-invalid={!!fieldErrors.building} value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value, facilitySpace: "" })}
                     placeholder="Select building" options={buildings.map(b => ({ value: b._id, label: b.name }))} />
+                </FormField>
+                <FormField label="Space" className="md:col-span-2" error={fieldErrors.facilitySpace}>
+                  <Select aria-invalid={!!fieldErrors.facilitySpace} value={form.facilitySpace} onChange={(e) => updateField("facilitySpace", e.target.value)}
+                    placeholder="Select space (optional)" options={facilitySpaces.map((space) => ({ value: space._id, label: `${space.name}${space.floor !== undefined ? ` - Floor ${space.floor}` : ""}` }))} />
                 </FormField>
               </div>
             )}
             {activeTab === "lifecycle" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Purchase Date">
-                  <Input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} />
+                  <Input type="date" value={form.purchaseDate} onChange={(e) => updateField("purchaseDate", e.target.value)} />
                 </FormField>
                 <FormField label="Installation Date">
-                  <Input type="date" value={form.installationDate} onChange={(e) => setForm({ ...form, installationDate: e.target.value })} />
+                  <Input type="date" value={form.installationDate} onChange={(e) => updateField("installationDate", e.target.value)} />
                 </FormField>
-                <FormField label="Warranty Expiry">
-                  <Input type="date" value={form.warrantyExpiryDate} onChange={(e) => setForm({ ...form, warrantyExpiryDate: e.target.value })} />
+                <FormField label="Warranty Expiry" error={fieldErrors.warrantyDate}>
+                  <Input aria-invalid={!!fieldErrors.warrantyDate} type="date" value={form.warrantyDate} onChange={(e) => updateField("warrantyDate", e.target.value)} />
                 </FormField>
-                <FormField label="Useful Life (years)">
-                  <Input type="number" value={form.usefulLifeYears} onChange={(e) => setForm({ ...form, usefulLifeYears: e.target.value })} />
+                <FormField label="Useful Life (years)" error={fieldErrors.usefulLife}>
+                  <Input aria-invalid={!!fieldErrors.usefulLife} type="number" value={form.usefulLife} onChange={(e) => updateField("usefulLife", e.target.value)} />
                 </FormField>
-                <FormField label="Purchase Cost ($)">
-                  <Input type="number" value={form.purchaseCost} onChange={(e) => setForm({ ...form, purchaseCost: e.target.value })} />
+                <FormField label="Purchase Cost (NGN)" error={fieldErrors.purchaseCost}>
+                  <Input aria-invalid={!!fieldErrors.purchaseCost} type="number" value={form.purchaseCost} onChange={(e) => updateField("purchaseCost", e.target.value)} />
                 </FormField>
-                <FormField label="Replacement Cost ($)">
-                  <Input type="number" value={form.replacementCost} onChange={(e) => setForm({ ...form, replacementCost: e.target.value })} />
+                <FormField label="Replacement Cost (NGN)" error={fieldErrors.replacementCost}>
+                  <Input aria-invalid={!!fieldErrors.replacementCost} type="number" value={form.replacementCost} onChange={(e) => updateField("replacementCost", e.target.value)} />
                 </FormField>
-                <FormField label="Salvage Value ($)">
-                  <Input type="number" value={form.salvageValue} onChange={(e) => setForm({ ...form, salvageValue: e.target.value })} />
+                <FormField label="Salvage Value (NGN)" error={fieldErrors.salvageValue}>
+                  <Input aria-invalid={!!fieldErrors.salvageValue} type="number" value={form.salvageValue} onChange={(e) => updateField("salvageValue", e.target.value)} />
                 </FormField>
-                <FormField label="Depreciation Method">
-                  <Select value={form.depreciationMethod} onChange={(e) => setForm({ ...form, depreciationMethod: e.target.value })}
-                    options={[{ value: "straight-line", label: "Straight Line" }, { value: "declining-balance", label: "Declining Balance" }, { value: "units-of-production", label: "Units of Production" }]} />
+                <FormField label="Depreciation Method" error={fieldErrors.depreciationMethod}>
+                  <Select aria-invalid={!!fieldErrors.depreciationMethod} value={form.depreciationMethod} onChange={(e) => updateField("depreciationMethod", e.target.value)}
+                    options={[{ value: "straight-line", label: "Straight Line" }, { value: "declining-balance", label: "Declining Balance" }, { value: "none", label: "None" }]} />
                 </FormField>
               </div>
             )}
             {activeTab === "maintenance" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Maintenance Strategy">
-                  <Select value={form.maintenanceStrategy} onChange={(e) => setForm({ ...form, maintenanceStrategy: e.target.value })}
+                <FormField label="Maintenance Strategy" error={fieldErrors.maintenanceStrategy}>
+                  <Select aria-invalid={!!fieldErrors.maintenanceStrategy} value={form.maintenanceStrategy} onChange={(e) => updateField("maintenanceStrategy", e.target.value)}
                     options={MAINTENANCE_STRATEGIES} />
                 </FormField>
               </div>

@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
-  Button, Modal, FormField, Input, Select, Textarea,
+  Button, Modal, FormField, Input, Select, Textarea, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   ClipboardCheck, Plus, Edit, Trash2, Eye, Building2,
   AlertTriangle, BarChart3, TrendingDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 const CONDITION_RATINGS = [
   { value: 1, label: "1 - Critical (Immediate Replacement)" },
@@ -37,6 +38,9 @@ export default function FCAPage() {
     currentReplacementValue: "", notes: "",
     systemRatings: FCA_SYSTEMS.map(s => ({ system: s, conditionRating: 3, notes: "", estimatedCost: 0 })),
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
@@ -65,14 +69,27 @@ export default function FCAPage() {
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/fca", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Assessment updated" : "Assessment created");
         setShowModal(false); setEditing(null); resetForm(); fetchFCA();
-      } else { toast.error("Failed to save"); }
-    } catch { toast.error("Something went wrong"); }
+      } else {
+        const err = await readApiError(res, "Failed to save FCA assessment");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
+      }
+    } catch {
+      setSubmitError("Something went wrong while saving this FCA assessment.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -156,19 +173,20 @@ export default function FCAPage() {
         {/* Create Modal */}
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); }}
           title="New FCA Assessment" size="xl"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSubmit}>Save Assessment</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : "Save Assessment"}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Building" required>
-                <Select value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value })}
+              <FormField label="Building" required error={fieldErrors.building}>
+                <Select aria-invalid={!!fieldErrors.building} value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value })}
                   placeholder="Select building" options={buildings.map(b => ({ value: b._id, label: b.name }))} />
               </FormField>
               <FormField label="Assessment Date">
                 <Input type="date" value={form.assessmentDate} onChange={(e) => setForm({ ...form, assessmentDate: e.target.value })} />
               </FormField>
-              <FormField label="Assessor Name">
-                <Input value={form.assessor} onChange={(e) => setForm({ ...form, assessor: e.target.value })} />
+              <FormField label="Assessor Name" error={fieldErrors.assessor}>
+                <Input aria-invalid={!!fieldErrors.assessor} value={form.assessor} onChange={(e) => setForm({ ...form, assessor: e.target.value })} />
               </FormField>
               <FormField label="Current Replacement Value ($)">
                 <Input type="number" value={form.currentReplacementValue} onChange={(e) => setForm({ ...form, currentReplacementValue: e.target.value })} />

@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, StatCard, DataTable, StatusBadge,
-  Button, Modal, FormField, Input, Select, Textarea,
+  Button, Modal, FormField, Input, Select, Textarea, FormAlert,
 } from "@/components/ui/SharedComponents";
 import {
   Siren, Plus, Edit, Trash2, Eye, Phone,
   Users, FileText, Calendar,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { readApiError } from "@/lib/clientApi";
 
 export default function EmergencyPage() {
   const [plans, setPlans] = useState([]);
@@ -26,6 +27,9 @@ export default function EmergencyPage() {
     incidentResponsePlan: "", evacuationProcedure: "",
     drillLogs: [],
   });
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
@@ -57,14 +61,27 @@ export default function EmergencyPage() {
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
+      setSaving(true);
+      setSubmitError("");
+      setFieldErrors({});
       const res = await fetch("/api/emergency", {
         method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Plan updated" : "Plan created");
         setShowModal(false); setEditing(null); resetForm(); fetchPlans();
-      } else { toast.error("Failed to save"); }
-    } catch { toast.error("Something went wrong"); }
+      } else {
+        const err = await readApiError(res, "Failed to save emergency plan");
+        setSubmitError(err.message);
+        setFieldErrors(err.fieldErrors);
+        toast.error(err.message);
+      }
+    } catch {
+      setSubmitError("Something went wrong while saving this emergency plan.");
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -156,15 +173,16 @@ export default function EmergencyPage() {
         {/* Create Modal */}
         <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditing(null); }}
           title={editing ? "Edit Plan" : "New Emergency Plan"} size="xl"
-          footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSubmit}>{editing ? "Update" : "Create"}</Button></>}
+          footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : (editing ? "Update" : "Create")}</Button></>}
         >
+          <FormAlert message={submitError} />
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Plan Title" required className="md:col-span-2">
-                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Fire Emergency Response Plan" />
+              <FormField label="Plan Title" required className="md:col-span-2" error={fieldErrors.title}>
+                <Input aria-invalid={!!fieldErrors.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Fire Emergency Response Plan" />
               </FormField>
-              <FormField label="Site" required>
-                <Select value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })}
+              <FormField label="Site" required error={fieldErrors.site}>
+                <Select aria-invalid={!!fieldErrors.site} value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })}
                   placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
               </FormField>
               <FormField label="Status">
