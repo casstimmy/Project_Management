@@ -59,7 +59,13 @@ export default function EmergencyPage() {
   const handleSubmit = async () => {
     if (!form.title || !form.site) return toast.error("Title and site are required");
     const method = editing ? "PUT" : "POST";
-    const payload = editing ? { ...form, _id: editing._id } : form;
+    // Filter out empty contacts and assembly points before submit
+    const cleanedForm = {
+      ...form,
+      contacts: form.contacts.filter(c => c.name?.trim()),
+      assemblyPoints: form.assemblyPoints.filter(ap => ap.name?.trim()),
+    };
+    const payload = editing ? { ...cleanedForm, _id: editing._id } : cleanedForm;
     try {
       setSaving(true);
       setSubmitError("");
@@ -118,6 +124,34 @@ export default function EmergencyPage() {
     setForm({ ...form, assemblyPoints: form.assemblyPoints.filter((_, i) => i !== index) });
   };
 
+  const addDrillLog = () => {
+    setForm({ ...form, drillLogs: [...form.drillLogs, { drillType: "", date: "", participants: 0, duration: 0, scenario: "", observations: "", improvements: "", conductedBy: "", passed: true }] });
+  };
+
+  const updateDrillLog = (index, field, value) => {
+    const updated = [...form.drillLogs];
+    updated[index] = { ...updated[index], [field]: value };
+    setForm({ ...form, drillLogs: updated });
+  };
+
+  const removeDrillLog = (index) => {
+    setForm({ ...form, drillLogs: form.drillLogs.filter((_, i) => i !== index) });
+  };
+
+  const openEdit = (plan) => {
+    setEditing(plan);
+    setForm({
+      site: plan.site?._id || "", title: plan.title || "", status: plan.status || "draft",
+      effectiveDate: plan.effectiveDate?.split("T")[0] || plan.createdAt?.split("T")[0] || "",
+      reviewDate: plan.reviewDate?.split("T")[0] || "", description: plan.description || "",
+      contacts: plan.contacts?.length ? plan.contacts.map(c => ({ name: c.name || "", role: c.role || "", phone: c.phone || "", email: c.email || "", organization: c.organization || "", type: c.type || "internal" })) : [{ name: "", role: "", phone: "", email: "", organization: "", type: "internal" }],
+      assemblyPoints: plan.assemblyPoints?.length ? plan.assemblyPoints : [{ name: "", location: "" }],
+      incidentResponsePlan: plan.incidentResponsePlan || "", evacuationProcedure: plan.evacuationProcedure || "",
+      drillLogs: plan.drillLogs?.length ? plan.drillLogs.map(d => ({ drillType: d.drillType || "", date: d.date?.split("T")[0] || "", participants: d.participants || 0, duration: d.duration || 0, scenario: d.scenario || "", observations: d.observations || "", improvements: d.improvements || "", conductedBy: d.conductedBy || "", passed: d.passed !== false })) : [],
+    });
+    setShowModal(true);
+  };
+
   const columns = [
     { header: "Plan", render: (row) => (
       <div className="flex items-center gap-2">
@@ -142,6 +176,7 @@ export default function EmergencyPage() {
     { header: "Actions", render: (row) => (
       <div className="flex gap-1">
         <button onClick={(e) => { e.stopPropagation(); setShowDetail(row); }} className="p-1.5 rounded-lg hover:bg-gray-100"><Eye size={14} className="text-gray-400" /></button>
+        <button onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="p-1.5 rounded-lg hover:bg-gray-100"><Edit size={14} className="text-gray-400" /></button>
         <button onClick={(e) => { e.stopPropagation(); handleDelete(row._id); }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
       </div>
     )},
@@ -257,6 +292,38 @@ export default function EmergencyPage() {
             <FormField label="Description / Additional Notes">
               <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Additional notes and procedures..." />
             </FormField>
+
+            {/* Drill Logs */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700">Drill Logs</h4>
+                <Button variant="ghost" size="xs" icon={<Plus size={14} />} onClick={addDrillLog}>Add Drill</Button>
+              </div>
+              {form.drillLogs.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">No drill logs added yet.</p>
+              ) : (
+                <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                  {form.drillLogs.map((drill, i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                      <div className="grid grid-cols-12 gap-2 items-center">
+                        <div className="col-span-3"><Input placeholder="Drill Type (e.g., Fire)" value={drill.drillType} onChange={(e) => updateDrillLog(i, "drillType", e.target.value)} /></div>
+                        <div className="col-span-2"><Input type="date" value={drill.date} onChange={(e) => updateDrillLog(i, "date", e.target.value)} /></div>
+                        <div className="col-span-2"><Input type="number" placeholder="Participants" value={drill.participants || ""} onChange={(e) => updateDrillLog(i, "participants", Number(e.target.value))} /></div>
+                        <div className="col-span-2"><Input type="number" placeholder="Duration (min)" value={drill.duration || ""} onChange={(e) => updateDrillLog(i, "duration", Number(e.target.value))} /></div>
+                        <div className="col-span-2"><Input placeholder="Conducted By" value={drill.conductedBy} onChange={(e) => updateDrillLog(i, "conductedBy", e.target.value)} /></div>
+                        <div className="col-span-1 text-center">
+                          <button onClick={() => removeDrillLog(i)} className="p-1 rounded hover:bg-red-100"><Trash2 size={14} className="text-red-400" /></button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input placeholder="Scenario" value={drill.scenario} onChange={(e) => updateDrillLog(i, "scenario", e.target.value)} />
+                        <Input placeholder="Observations" value={drill.observations} onChange={(e) => updateDrillLog(i, "observations", e.target.value)} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </Modal>
 

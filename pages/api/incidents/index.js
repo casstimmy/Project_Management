@@ -41,9 +41,11 @@ export default async function handler(req, res) {
 
     if (method === "POST") {
       const data = req.body;
-      if (!data.title || !data.description) {
-        return res.status(400).json({ error: "Title and description are required" });
+      if (!data.title) {
+        return res.status(400).json({ error: "Title is required" });
       }
+      // Set a default description if not provided
+      if (!data.description) data.description = data.title;
 
       const incident = await Incident.create(data);
       return res.status(201).json(incident);

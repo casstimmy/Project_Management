@@ -6,7 +6,7 @@ import {
   ShieldCheck, AlertTriangle, Wrench, CalendarClock,
   DollarSign, FileText, Users, ChevronDown,
   ChevronRight, MapPin, Layers, Bell, Gauge,
-  FolderKanban, Settings, ListChecks, CalendarDays,
+  FolderKanban, Settings, ListChecks, CalendarDays, Map,
 } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 
@@ -34,6 +34,7 @@ const allSections = [
       },
       { href: "/assets", label: "Asset Register", icon: Package },
       { href: "/fca", label: "Condition Assessment", icon: ClipboardCheck },
+      { href: "/maps", label: "MEP Maps", icon: Map },
     ],
   },
   {

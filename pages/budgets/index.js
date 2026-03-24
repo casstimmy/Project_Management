@@ -6,8 +6,9 @@ import {
 } from "@/components/ui/SharedComponents";
 import {
   DollarSign, Plus, Edit, Trash2, Eye, TrendingUp,
-  TrendingDown, BarChart3, PieChart, Calculator, MapPin,
+  TrendingDown, BarChart3, PieChart, Calculator, MapPin, Upload,
 } from "lucide-react";
+import axios from "axios";
 import toast from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as ReChart, Pie, Cell } from "recharts";
 import { readApiError } from "@/lib/clientApi";
@@ -43,10 +44,12 @@ export default function BudgetsPage() {
     title: "", budgetType: "OPEX", fiscalYear: new Date().getFullYear().toString(),
     site: "", building: "", costCenter: "", status: "draft", notes: "",
     lineItems: [{ description: "", category: "", budgetedAmount: 0, actualAmount: 0 }],
+    documents: [],
   });
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [uploading, setUploading] = useState(false);
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true);
@@ -76,6 +79,7 @@ export default function BudgetsPage() {
     title: "", budgetType: "OPEX", fiscalYear: new Date().getFullYear().toString(),
     site: "", building: "", costCenter: "", status: "draft", notes: "",
     lineItems: [{ description: "", category: "", budgetedAmount: 0, actualAmount: 0 }],
+    documents: [],
   });
 
   const handleSubmit = async () => {
@@ -355,6 +359,41 @@ export default function BudgetsPage() {
             <FormField label="Notes">
               <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </FormField>
+
+            {/* Document Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Documents</label>
+              {form.documents?.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {form.documents.map((doc, i) => (
+                    <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline truncate">{doc.name || doc.url}</a>
+                      <button type="button" onClick={() => setForm({ ...form, documents: form.documents.filter((_, idx) => idx !== i) })} className="p-1 rounded hover:bg-red-100"><Trash2 size={14} className="text-red-400" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className={`inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 text-sm text-gray-500 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                <Upload size={16} />
+                {uploading ? 'Uploading...' : 'Upload Document'}
+                <input type="file" className="hidden" disabled={uploading} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const res = await axios.post('/api/upload', formData);
+                    const url = res.data.links?.[0];
+                    if (url) {
+                      setForm(prev => ({ ...prev, documents: [...(prev.documents || []), { name: file.name, url }] }));
+                      toast.success('Document uploaded');
+                    }
+                  } catch { toast.error('Upload failed'); }
+                  finally { setUploading(false); e.target.value = ''; }
+                }} />
+              </label>
+            </div>
           </div>
         </Modal>
 

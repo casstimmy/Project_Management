@@ -128,6 +128,18 @@ export default function FCAPage() {
     toast.success("Deleted"); fetchFCA();
   };
 
+  const openEdit = (assessment) => {
+    setEditing(assessment);
+    setForm({
+      building: assessment.building?._id || "", assessmentDate: assessment.assessmentDate?.split("T")[0] || "",
+      assessor: assessment.assessor || "", status: assessment.status || "draft",
+      currentReplacementValue: assessment.currentReplacementValue || "", notes: assessment.notes || "",
+      systemRatings: assessment.systemRatings?.length ? assessment.systemRatings.map(sr => ({ system: sr.system, conditionRating: sr.conditionRating || 3, notes: sr.notes || "", estimatedCost: sr.estimatedCost || 0 }))
+        : fcaSystems.map(s => ({ system: s, conditionRating: 3, notes: "", estimatedCost: 0 })),
+    });
+    setShowModal(true);
+  };
+
   const getFCIColor = (fci) => {
     if (fci <= 0.05) return "text-emerald-600 bg-emerald-50";
     if (fci <= 0.1) return "text-amber-600 bg-amber-50";
@@ -170,6 +182,7 @@ export default function FCAPage() {
     { header: "Actions", render: (row) => (
       <div className="flex gap-1">
         <button onClick={(e) => { e.stopPropagation(); setShowDetail(row); }} className="p-1.5 rounded-lg hover:bg-gray-100"><Eye size={14} className="text-gray-400" /></button>
+        <button onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="p-1.5 rounded-lg hover:bg-gray-100"><Edit size={14} className="text-gray-400" /></button>
         <button onClick={(e) => { e.stopPropagation(); handleDelete(row._id); }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
       </div>
     )},
@@ -229,9 +242,11 @@ export default function FCAPage() {
               </div>
               {/* Add new system row */}
               <div className="flex items-center gap-2 mb-3">
-                <Select
-                  value=""
-                  onChange={(e) => {
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Re-add a removed system</label>
+                  <Select
+                    value=""
+                    onChange={(e) => {
                     const name = e.target.value;
                     if (!name || form.systemRatings.some(sr => sr.system === name)) return;
                     setForm(prev => ({
@@ -244,8 +259,11 @@ export default function FCAPage() {
                     .filter(s => !form.systemRatings.some(sr => sr.system === s))
                     .map(s => ({ value: s, label: s }))}
                 />
-                <div className="flex items-center gap-1">
-                  <Input
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Add a custom system</label>
+                  <div className="flex items-center gap-1">
+                    <Input
                     placeholder="New system name..."
                     value={newSystemName}
                     onChange={(e) => setNewSystemName(e.target.value)}
@@ -258,6 +276,7 @@ export default function FCAPage() {
                   >
                     <Plus size={14} />
                   </button>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-12 gap-3 mb-2 px-3">

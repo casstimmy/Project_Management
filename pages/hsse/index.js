@@ -97,7 +97,8 @@ export default function HSSEPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.title || !form.site) return toast.error("Title and site are required");
+    if (!form.title) return toast.error("Audit title is required");
+    if (!form.auditor) return toast.error("Auditor name is required");
     const method = editing ? "PUT" : "POST";
     const payload = editing ? { ...form, _id: editing._id } : form;
     try {
@@ -128,6 +129,18 @@ export default function HSSEPage() {
     if (!confirm("Delete this audit?")) return;
     await fetch(`/api/hsse?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchAudits();
+  };
+
+  const openEdit = (audit) => {
+    setEditing(audit);
+    setForm({
+      title: audit.title || "", site: audit.site?._id || "", building: audit.building?._id || "",
+      auditType: audit.auditType || "comprehensive", auditDate: audit.auditDate?.split("T")[0] || "",
+      auditor: audit.auditor || "", status: audit.status || "draft", notes: audit.notes || "",
+      checklist: audit.checklist?.length ? audit.checklist.map(c => ({ category: c.category, question: c.question, response: c.response || "yes", comments: c.comments || "" })) : hsseCategories.map(c => ({ category: c, question: c + " compliance check", response: "yes", comments: "" })),
+      risks: audit.risks || [],
+    });
+    setShowModal(true);
   };
 
   const getComplianceColor = (score) => {
@@ -162,6 +175,7 @@ export default function HSSEPage() {
     { header: "Actions", render: (row) => (
       <div className="flex gap-1">
         <button onClick={(e) => { e.stopPropagation(); setShowDetail(row); }} className="p-1.5 rounded-lg hover:bg-gray-100"><Eye size={14} className="text-gray-400" /></button>
+        <button onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="p-1.5 rounded-lg hover:bg-gray-100"><Edit size={14} className="text-gray-400" /></button>
         <button onClick={(e) => { e.stopPropagation(); handleDelete(row._id); }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
       </div>
     )},

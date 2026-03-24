@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/SharedComponents";
 import {
   FolderKanban, Plus, Edit, Trash2, Users,
-  Calendar, Target, ArrowRight, Search,
+  Calendar, Target, ArrowRight, Search, DollarSign,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
@@ -24,6 +24,7 @@ export default function ProjectsPage() {
   const [form, setForm] = useState({
     title: "", purpose: "", scope: "", site: "",
     risks: "", assumptions: "",
+    budget: [{ category: "", amount: 0, actual: 0 }],
   });
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -51,6 +52,7 @@ export default function ProjectsPage() {
   const resetForm = () => setForm({
     title: "", purpose: "", scope: "", site: "",
     risks: "", assumptions: "",
+    budget: [{ category: "", amount: 0, actual: 0 }],
   });
 
   const handleSubmit = async () => {
@@ -121,6 +123,7 @@ export default function ProjectsPage() {
     setForm({
       title: p.title || "", purpose: p.purpose || "", scope: p.scope || "",
       site: p.site || "", risks: p.risks || "", assumptions: p.assumptions || "",
+      budget: p.budget?.length ? p.budget.map(b => ({ category: b.category || "", amount: b.amount || 0, actual: b.actual || 0 })) : [{ category: "", amount: 0, actual: 0 }],
     });
     setShowModal(true);
   };
@@ -229,6 +232,46 @@ export default function ProjectsPage() {
               <FormField label="Assumptions">
                 <Textarea placeholder="Key assumptions" value={form.assumptions} onChange={(e) => setForm({ ...form, assumptions: e.target.value })} rows={2} />
               </FormField>
+            </div>
+
+            {/* Budget / Cost Items */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><DollarSign size={14} /> Project Costs</h4>
+                <Button variant="ghost" size="xs" icon={<Plus size={14} />} onClick={() => setForm({ ...form, budget: [...form.budget, { category: "", amount: 0, actual: 0 }] })}>Add Item</Button>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                {form.budget.map((item, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 bg-gray-50 rounded-lg p-3 items-center">
+                    <div className="col-span-5">
+                      <Input placeholder="Category (e.g., Materials, Labor)" value={item.category} onChange={(e) => {
+                        const updated = [...form.budget]; updated[i] = { ...updated[i], category: e.target.value }; setForm({ ...form, budget: updated });
+                      }} />
+                    </div>
+                    <div className="col-span-3">
+                      <Input type="number" placeholder="Budgeted (₦)" value={item.amount || ""} onChange={(e) => {
+                        const updated = [...form.budget]; updated[i] = { ...updated[i], amount: Number(e.target.value) }; setForm({ ...form, budget: updated });
+                      }} />
+                    </div>
+                    <div className="col-span-3">
+                      <Input type="number" placeholder="Actual (₦)" value={item.actual || ""} onChange={(e) => {
+                        const updated = [...form.budget]; updated[i] = { ...updated[i], actual: Number(e.target.value) }; setForm({ ...form, budget: updated });
+                      }} />
+                    </div>
+                    <div className="col-span-1 text-center">
+                      {form.budget.length > 1 && (
+                        <button type="button" onClick={() => setForm({ ...form, budget: form.budget.filter((_, idx) => idx !== i) })} className="p-1 rounded hover:bg-red-100"><Trash2 size={14} className="text-red-400" /></button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {form.budget.some(b => b.amount > 0) && (
+                <div className="mt-2 flex justify-end gap-4 text-sm">
+                  <span className="text-gray-500">Total Budgeted: <span className="font-semibold text-gray-900">₦{form.budget.reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()}</span></span>
+                  <span className="text-gray-500">Total Actual: <span className="font-semibold text-gray-900">₦{form.budget.reduce((s, b) => s + (b.actual || 0), 0).toLocaleString()}</span></span>
+                </div>
+              )}
             </div>
           </div>
         </Modal>
