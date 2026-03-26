@@ -3,6 +3,10 @@
         "/^cd \"c:\\\\Users\\\\hp\\\\Desktop\\\\Projects\\\\Project Management\\\\project_management\" ; npm install nodemailer$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^npx next build 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

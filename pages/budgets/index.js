@@ -12,6 +12,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as ReChart, Pie, Cell } from "recharts";
 import { readApiError } from "@/lib/clientApi";
+import { formatCurrency, formatNumber, formatCompactCurrency } from "@/lib/currency";
 
 const OPEX_CATEGORIES = [
   "Utilities", "Cleaning", "Security", "Landscaping", "Waste Management",
