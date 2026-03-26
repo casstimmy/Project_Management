@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { Building2, FolderKanban, ArrowLeft } from "lucide-react";
+import { Building2, FolderKanban, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 
 function LoginForm() {
@@ -12,6 +12,7 @@ function LoginForm() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showModeSelect, setShowModeSelect] = useState(false);
   const [pendingToken, setPendingToken] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   function persistSession(token, mode) {
     localStorage.setItem("token", token);
@@ -131,14 +132,24 @@ function LoginForm() {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-        <input
-          type="password"
-          placeholder="Enter your password"
-          className="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter your password"
+            className="w-full border border-gray-300 px-4 py-2.5 pr-12 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((current) => !current)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
         <div className="flex justify-end mt-1.5">
           <Link href="/forgot-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium transition">
             Forgot password?

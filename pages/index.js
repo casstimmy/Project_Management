@@ -1,15 +1,45 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Building2, FolderKanban, Shield } from "lucide-react";
 import LoginForm from "@/components/auth/LoginForm";
+import SetupAdminForm from "@/components/auth/SetupAdminForm";
 
 export default function HomeLoginPage() {
   const router = useRouter();
+  const [requiresSetup, setRequiresSetup] = useState(false);
+  const [statusReady, setStatusReady] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) router.replace("/homePage");
   }, [router]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchBootstrapStatus() {
+      try {
+        const res = await fetch("/api/auth/create-admin");
+        const data = await res.json();
+        if (active) {
+          setRequiresSetup(Boolean(data.requiresSetup));
+        }
+      } catch {
+        if (active) {
+          setRequiresSetup(false);
+        }
+      } finally {
+        if (active) {
+          setStatusReady(true);
+        }
+      }
+    }
+
+    fetchBootstrapStatus();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -77,12 +107,18 @@ export default function HomeLoginPage() {
           </div>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Sign in to your account</h1>
-            <p className="text-gray-500 text-sm mt-1.5">Welcome back. Enter your credentials below.</p>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              {requiresSetup ? "Create the first admin" : "Sign in to your account"}
+            </h1>
+            <p className="text-gray-500 text-sm mt-1.5">
+              {requiresSetup
+                ? "Finish the initial setup so the workspace can be accessed."
+                : "Welcome back. Enter your credentials below."}
+            </p>
           </div>
 
           <div className="space-y-5">
-            <LoginForm />
+            {!statusReady ? null : requiresSetup ? <SetupAdminForm /> : <LoginForm />}
           </div>
         </div>
       </div>

@@ -4,6 +4,10 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { applyRateLimit, authLimiter } from "@/lib/rateLimit";
 
+function cleanEnv(value) {
+  return value?.split("#")[0]?.trim()?.replace(/^"|"$/g, "") || "";
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -37,23 +41,40 @@ export default async function handler(req, res) {
   await user.save();
 
   // Build the reset URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.headers["x-forwarded-proto"] || "http"}://${req.headers.host}`;
+  const baseUrl = cleanEnv(process.env.NEXT_PUBLIC_APP_URL) || `${req.headers["x-forwarded-proto"] || "http"}://${req.headers.host}`;
   const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+  const smtpHost = cleanEnv(process.env.SMTP_HOST);
+  const smtpPort = Number(cleanEnv(process.env.SMTP_PORT)) || 587;
+  const smtpUser = cleanEnv(process.env.SMTP_USER);
+  const smtpPass = cleanEnv(process.env.SMTP_PASS);
+  const smtpFrom = cleanEnv(process.env.SMTP_FROM) || smtpUser;
+
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    await user.save();
+    return res.status(500).json({ error: "Password reset email is not configured on this server." });
+  }
 
   // Send the email
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: Number(process.env.SMTP_PORT) === 465,
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    requireTLS: smtpPort !== 465,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: smtpUser,
+      pass: smtpPass,
     },
   });
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      from: smtpFrom,
       to: user.email,
       subject: "Password Reset Request",
       html: `
