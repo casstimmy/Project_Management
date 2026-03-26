@@ -5,6 +5,34 @@ import Building from "@/models/Building";
 import { sendApiError } from "@/lib/apiErrors";
 import { authenticate } from "@/lib/auth";
 
+async function enrichAssessmentPayload(payload = {}) {
+  const data = { ...payload };
+
+  if (!data.building) return data;
+
+  const building = await Building.findById(data.building).select("name site").lean();
+  if (!building) return data;
+
+  const assessmentDate = data.assessmentDate ? new Date(data.assessmentDate) : new Date();
+  const dateLabel = Number.isNaN(assessmentDate.getTime())
+    ? "Undated"
+    : assessmentDate.toISOString().slice(0, 10);
+
+  if (!data.title?.trim()) {
+    data.title = `${building.name} FCA - ${dateLabel}`;
+  }
+
+  if (!data.site && building.site) {
+    data.site = building.site;
+  }
+
+  if (!data.assessor) {
+    data.assessor = "";
+  }
+
+  return data;
+}
+
 export default async function handler(req, res) {
   if (!(await authenticate(req, res))) return;
 
@@ -40,9 +68,9 @@ export default async function handler(req, res) {
     }
 
     if (method === "POST") {
-      const data = req.body;
-      if (!data.title || !data.building) {
-        return res.status(400).json({ error: "Title and building are required" });
+      const data = await enrichAssessmentPayload(req.body);
+      if (!data.building) {
+        return res.status(400).json({ error: "Building is required" });
       }
 
       const fca = new FCAAssessment(data);
@@ -57,7 +85,7 @@ export default async function handler(req, res) {
       const fca = await FCAAssessment.findById(_id);
       if (!fca) return res.status(404).json({ error: "Assessment not found" });
 
-      Object.assign(fca, data);
+      Object.assign(fca, await enrichAssessmentPayload(data));
       await fca.save();
       return res.json(fca);
     }

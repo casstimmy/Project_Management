@@ -33,11 +33,11 @@ const FCAAssessmentSchema = new Schema(
     site: { type: Schema.Types.ObjectId, ref: "Site" },
     building: { type: Schema.Types.ObjectId, ref: "Building", required: true },
     assessmentDate: { type: Date, required: true, default: Date.now },
-    assessor: { type: String, required: true },
+    assessor: { type: String, default: "" },
     assessorId: { type: Schema.Types.ObjectId, ref: "User" },
 
     // Assessment data
-    title: { type: String, required: true },
+    title: { type: String, default: "" },
     description: { type: String, default: "" },
 
     // Overall ratings
@@ -53,7 +53,7 @@ const FCAAssessmentSchema = new Schema(
     systemRatings: [
       {
         system: String,
-        rating: { type: Number, min: 1, max: 5 },
+        conditionRating: { type: Number, min: 1, max: 5, default: 3 },
         notes: String,
         estimatedCost: { type: Number, default: 0 },
       },
