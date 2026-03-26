@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { jwtDecode } from "jwt-decode";
+import { formatCurrency } from "@/lib/currency";
 import Link from "next/link";
 
 const CHART_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"];
@@ -63,7 +64,6 @@ export default function HomePage() {
     finally { setLoading(false); }
   };
 
-  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "₦0";
   const s = dashboard?.summary || {};
 
   const quickLinks = [
@@ -230,7 +230,7 @@ export default function HomePage() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{proj.title}</p>
-                        <p className="text-xs text-gray-500">{taskCount} tasks • ₦{budgetTotal.toLocaleString()} budget</p>
+                        <p className="text-xs text-gray-500">{taskCount} tasks • {formatCurrency(budgetTotal)} budget</p>
                       </div>
                       {isExpanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
                     </button>
@@ -250,7 +250,7 @@ export default function HomePage() {
                           <div className="flex gap-2 flex-wrap mb-2">
                             {proj.budget.map((b, i) => (
                               <span key={i} className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
-                                {b.category}: ₦{b.amount?.toLocaleString()}
+                                {b.category}: {formatCurrency(b.amount)}
                               </span>
                             ))}
                           </div>

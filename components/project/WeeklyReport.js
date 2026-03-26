@@ -4,6 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, PieChart, Pie, Cell, Legend,
 } from "recharts";
+import { formatCurrency, formatCompactCurrency } from "@/lib/currency";
 
 const COLORS = ["#3B82F6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
 
@@ -261,7 +262,7 @@ export default function Reports({ project }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-sm text-gray-500 mb-1">Total Budget</p>
-              <p className="text-2xl font-bold text-gray-900">₦{stats.totalBudget.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalBudget)}</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-sm text-gray-500 mb-1">Categories</p>
@@ -270,7 +271,7 @@ export default function Reports({ project }) {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-sm text-gray-500 mb-1">Avg per Category</p>
               <p className="text-2xl font-bold text-gray-900">
-                ₦{stats.budget.length > 0 ? Math.round(stats.totalBudget / stats.budget.length).toLocaleString() : 0}
+                {formatCurrency(stats.budget.length > 0 ? Math.round(stats.totalBudget / stats.budget.length) : 0)}
               </p>
             </div>
           </div>
@@ -284,8 +285,8 @@ export default function Reports({ project }) {
                   <BarChart data={stats.budget.map((b) => ({ name: b.category, amount: b.amount }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-15} textAnchor="end" height={60} />
-                    <YAxis tickFormatter={(v) => `₦${(v / 1000000).toFixed(1)}M`} />
-                    <Tooltip formatter={(v) => `₦${Number(v).toLocaleString()}`} />
+                    <YAxis tickFormatter={(v) => formatCompactCurrency(v)} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
                     <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
                       {stats.budget.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -301,7 +302,7 @@ export default function Reports({ project }) {
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                         <span className="text-sm text-gray-700">{b.category}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">₦{b.amount?.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-gray-900">{formatCurrency(b.amount)}</span>
                     </div>
                   ))}
                 </div>

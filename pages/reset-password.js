@@ -17,8 +17,8 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Set new password</h1>
               <p className="text-gray-500 text-sm mt-1.5">
-                Enter your new password below. Must be at least 6 characters.
+                Enter your new password below. Must be at least 8 characters.
               </p>
             </div>
 
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                   <button
                     type="button"
@@ -151,7 +151,7 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                   <button
                     type="button"

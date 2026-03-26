@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import { formatCurrency } from "@/lib/currency";
 
 const CONDITION_RATINGS = [
   { value: 1, label: "1 - Critical (Immediate Replacement)" },
@@ -153,7 +154,7 @@ export default function FCAPage() {
     return "Critical";
   };
 
-  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "—";
+
 
   const columns = [
     { header: "Building", render: (row) => (

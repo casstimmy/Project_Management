@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { Plus, Trash2, Save, X, Receipt, ClipboardList } from "lucide-react";
 import toast from "react-hot-toast";
+import { formatCurrency, formatNumber, formatCompactCurrency } from "@/lib/currency";
 
 const COLORS = ["#3B82F6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#EC4899", "#F97316"];
 
@@ -194,7 +195,7 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
               </div>
               <div className="col-span-2 flex gap-1 justify-end">
                 <span className={`text-xs font-medium ${(item.amount - item.actual) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {item.amount - item.actual >= 0 ? "+" : ""}₦{(item.amount - item.actual).toLocaleString()}
+                  {item.amount - item.actual >= 0 ? "+" : ""}{formatCurrency(item.amount - item.actual)}
                 </span>
                 {editItems.length > 1 && (
                   <button onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))}
@@ -236,20 +237,20 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Total Budget</p>
-          <p className="text-2xl font-bold text-gray-900">₦{totalBudget.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalBudget)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Total Actual</p>
-          <p className="text-2xl font-bold text-emerald-600">₦{totalActual.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalActual)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Expenses Logged</p>
-          <p className="text-2xl font-bold text-orange-600">₦{totalExpenses.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-orange-600">{formatCurrency(totalExpenses)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Variance</p>
           <p className={`text-2xl font-bold ${totalBudget - totalActual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-            ₦{Math.abs(totalBudget - totalActual).toLocaleString()}
+            {formatCurrency(Math.abs(totalBudget - totalActual))}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -291,8 +292,8 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
                 <BarChart data={chartData} barSize={28}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-15} textAnchor="end" height={60} />
-                  <YAxis tickFormatter={(v) => `₦${(v / 1000000).toFixed(1)}M`} />
-                  <Tooltip formatter={(v) => [`₦${Number(v).toLocaleString()}`, ""]} />
+                  <YAxis tickFormatter={(v) => formatCompactCurrency(v)} />
+                  <Tooltip formatter={(v) => [formatCurrency(v), ""]} />
                   <Legend />
                   <Bar dataKey="allocated" fill="#3B82F6" name="Budget" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="actual" fill="#22C55E" name="Actual" radius={[4, 4, 0, 0]} />
@@ -310,7 +311,7 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => `₦${Number(v).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => formatCurrency(v)} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -342,10 +343,10 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
                           <span className="text-sm font-medium text-gray-900">{item.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">₦{item.allocated.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">₦{item.actual.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">{formatCurrency(item.allocated)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">{formatCurrency(item.actual)}</td>
                       <td className={`px-4 py-3 text-sm text-right font-medium ${variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {variance >= 0 ? "+" : ""}₦{variance.toLocaleString()}
+                        {variance >= 0 ? "+" : ""}{formatCurrency(variance)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 text-right">{item.percentage}%</td>
                       <td className="px-4 py-3">
@@ -364,10 +365,10 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
               <tfoot className="bg-gray-50 border-t border-gray-200">
                 <tr>
                   <td className="px-4 py-3 text-sm font-bold text-gray-900">Total</td>
-                  <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">₦{totalBudget.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">₦{totalActual.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">{formatCurrency(totalBudget)}</td>
+                  <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">{formatCurrency(totalActual)}</td>
                   <td className={`px-4 py-3 text-sm font-bold text-right ${totalBudget - totalActual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {totalBudget - totalActual >= 0 ? "+" : ""}₦{(totalBudget - totalActual).toLocaleString()}
+                    {totalBudget - totalActual >= 0 ? "+" : ""}{formatCurrency(totalBudget - totalActual)}
                   </td>
                   <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">100%</td>
                   <td className="px-4 py-3" />
@@ -480,7 +481,7 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
                         <td className="px-4 py-3 text-sm text-gray-600">{exp.category || "—"}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{task?.name || "General"}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{exp.description || "—"}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">₦{exp.amount.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{formatCurrency(exp.amount)}</td>
                         <td className="px-4 py-3 text-right">
                           <button onClick={() => handleDeleteExpense(exp.id)}
                             className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
@@ -494,7 +495,7 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
                 <tfoot className="bg-gray-50 border-t border-gray-200">
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-sm font-bold text-gray-900">Total Expenses</td>
-                    <td className="px-4 py-3 text-sm font-bold text-orange-600 text-right">₦{totalExpenses.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm font-bold text-orange-600 text-right">{formatCurrency(totalExpenses)}</td>
                     <td />
                   </tr>
                 </tfoot>
@@ -542,7 +543,7 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
                       </div>
                       <div className="text-right">
                         <p className={`text-sm font-bold ${cost > 0 ? "text-orange-600" : "text-gray-400"}`}>
-                          ₦{cost.toLocaleString()}
+                          {formatCurrency(cost)}
                         </p>
                         <p className="text-xs text-gray-400">
                           {expenses.filter(e => e.taskId === task._id).length} expense{expenses.filter(e => e.taskId === task._id).length !== 1 ? "s" : ""}
@@ -553,7 +554,7 @@ export default function BudgetVsActual({ data = [], projectId, tasks = [], onUpd
                 })}
                 <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 mt-2">
                   <span className="text-sm font-bold text-gray-900">Total Task Costs</span>
-                  <span className="text-sm font-bold text-orange-600">₦{Object.values(taskCosts).reduce((s, v) => s + v, 0).toLocaleString()}</span>
+                  <span className="text-sm font-bold text-orange-600">{formatCurrency(Object.values(taskCosts).reduce((s, v) => s + v, 0))}</span>
                 </div>
               </div>
             ) : (

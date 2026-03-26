@@ -34,6 +34,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "The password you entered is incorrect" });
   }
 
+  // Update last login timestamp
+  user.lastLogin = new Date();
+  await user.save();
+
   const token = jwt.sign(
     {
       id: user._id,
@@ -44,7 +48,6 @@ export default async function handler(req, res) {
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
-
 
   res.status(200).json({ token });
 }

@@ -130,7 +130,7 @@ export default function BudgetsPage() {
     setForm({ ...form, lineItems: form.lineItems.filter((_, idx) => idx !== i) });
   };
 
-  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "₦0";
+
 
   const totalBudgeted = budgets.reduce((s, b) => s + (b.totalBudgeted || 0), 0);
   const totalActual = budgets.reduce((s, b) => s + (b.totalActual || 0), 0);
@@ -245,7 +245,7 @@ export default function BudgetsPage() {
                 <BarChart data={budgetByType}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
+                  <YAxis tickFormatter={(v) => formatCompactCurrency(v)} />
                   <Tooltip formatter={(v) => formatCurrency(v)} />
                   <Legend />
                   <Bar dataKey="budgeted" fill="#3B82F6" name="Budgeted" radius={[4, 4, 0, 0]} />
@@ -260,7 +260,7 @@ export default function BudgetsPage() {
                   <BarChart data={yearlyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(v) => `₦${(v / 1000000).toFixed(1)}M`} />
+                    <YAxis tickFormatter={(v) => formatCompactCurrency(v)} />
                     <Tooltip formatter={(v) => formatCurrency(v)} />
                     <Legend />
                     <Bar dataKey="opexActual" fill="#3B82F6" name="OPEX" radius={[4, 4, 0, 0]} stackId="actual" />
@@ -338,7 +338,7 @@ export default function BudgetsPage() {
                     </div>
                     <div className="col-span-1 text-center">
                       <span className={`text-xs font-medium ${(item.budgetedAmount - item.actualAmount) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {item.budgetedAmount - item.actualAmount >= 0 ? "+" : ""}{(item.budgetedAmount - item.actualAmount).toLocaleString()}
+                        {item.budgetedAmount - item.actualAmount >= 0 ? "+" : ""}{formatNumber(item.budgetedAmount - item.actualAmount)}
                       </span>
                     </div>
                     <div className="col-span-1 text-center">
@@ -530,7 +530,7 @@ export default function BudgetsPage() {
                     <BarChart data={projections}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="year" />
-                      <YAxis tickFormatter={(v) => `₦${(v / 1000000).toFixed(1)}M`} />
+                      <YAxis tickFormatter={(v) => formatCompactCurrency(v)} />
                       <Tooltip formatter={(v) => formatCurrency(v)} />
                       <Legend />
                       <Bar dataKey="projectedOpex" fill="#3B82F6" name="OPEX" radius={[4, 4, 0, 0]} />

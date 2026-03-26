@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import { formatCurrency } from "@/lib/currency";
 
 const WO_TYPES = [
   { value: "preventive", label: "Preventive" }, { value: "predictive", label: "Predictive" },
@@ -128,7 +129,7 @@ export default function WorkOrdersPage() {
   };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : "—";
-  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "—";
+
 
   const columns = [
     { header: "Work Order", render: (row) => (

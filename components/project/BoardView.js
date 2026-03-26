@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskModal from "../Modal/AddTaskModal";
+import { formatCurrency } from "@/lib/currency";
 
 const statuses = ["todo", "inprogress", "done"];
 const statusLabels = {
@@ -126,7 +127,7 @@ export default function BoardView({ project, onTaskClick, onDeleteTask, onAddTas
               <div className="flex flex-wrap gap-2 mt-1">
                 {project.budget.map((b, i) => (
                   <span key={i} className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
-                    {b.category}: ₦{Number(b.amount || 0).toLocaleString()}
+                    {b.category}: {formatCurrency(Number(b.amount || 0))}
                   </span>
                 ))}
               </div>

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import { formatCurrency, formatNumber } from "@/lib/currency";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -152,7 +153,7 @@ export default function ProjectsPage() {
           <StatCard icon={<FolderKanban size={20} />} label="Total Projects" value={projects.length} color="blue" />
           <StatCard icon={<Target size={20} />} label="Total Tasks" value={totalTasks} color="purple" />
           <StatCard icon={<Users size={20} />} label="Stakeholders" value={projects.reduce((s, p) => s + (p.stakeholders?.length || 0), 0)} color="green" />
-          <StatCard icon={<Calendar size={20} />} label="Total Budget" value={`₦${totalBudget.toLocaleString()}`} color="indigo" />
+          <StatCard icon={<Calendar size={20} />} label="Total Budget" value={formatCurrency(totalBudget)} color="indigo" />
         </div>
 
         <div className="mb-6">
@@ -192,7 +193,7 @@ export default function ProjectsPage() {
                   {siteName && <p className="text-xs text-gray-400 mb-2">Site: {siteName}</p>}
                   <div className="flex items-center gap-4 mt-auto pt-3 border-t border-gray-100">
                     <span className="text-xs text-gray-500">{taskCount} tasks</span>
-                    {budgetTotal > 0 && <span className="text-xs text-gray-500">₦{budgetTotal.toLocaleString()}</span>}
+                    {budgetTotal > 0 && <span className="text-xs text-gray-500">{formatCurrency(budgetTotal)}</span>}
                     <Link href={`/projects/${p._id}`} className="ml-auto flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium">
                       Open <ArrowRight size={12} />
                     </Link>
@@ -268,8 +269,8 @@ export default function ProjectsPage() {
               </div>
               {form.budget.some(b => b.amount > 0) && (
                 <div className="mt-2 flex justify-end gap-4 text-sm">
-                  <span className="text-gray-500">Total Budgeted: <span className="font-semibold text-gray-900">₦{form.budget.reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()}</span></span>
-                  <span className="text-gray-500">Total Actual: <span className="font-semibold text-gray-900">₦{form.budget.reduce((s, b) => s + (b.actual || 0), 0).toLocaleString()}</span></span>
+                  <span className="text-gray-500">Total Budgeted: <span className="font-semibold text-gray-900">{formatCurrency(form.budget.reduce((s, b) => s + (b.amount || 0), 0))}</span></span>
+                  <span className="text-gray-500">Total Actual: <span className="font-semibold text-gray-900">{formatCurrency(form.budget.reduce((s, b) => s + (b.actual || 0), 0))}</span></span>
                 </div>
               )}
             </div>

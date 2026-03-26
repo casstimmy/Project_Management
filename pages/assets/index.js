@@ -12,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 import { readApiError, toOptionalDate, toOptionalNumber, toOptionalObjectId } from "@/lib/clientApi";
 import { ASSET_CATEGORIES, MAINTENANCE_STRATEGIES } from "@/lib/constants";
+import { formatCurrency } from "@/lib/currency";
 
 const STATUSES = [
   { value: "in-service", label: "In Service" },
@@ -214,7 +215,7 @@ export default function AssetsPage() {
     setShowModal(true);
   };
 
-  const formatCurrency = (v) => v ? `₦${Number(v).toLocaleString()}` : "—";
+
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : "—";
 
   const columns = [
