@@ -19,9 +19,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
-  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
-    return res.status(401).json({ error: "Invalid credentials" });
+    return res.status(401).json({ error: "No account was found for that email address" });
   }
 
   if (!user.isActive) {
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(401).json({ error: "Invalid credentials" });
+    return res.status(401).json({ error: "The password you entered is incorrect" });
   }
 
   const token = jwt.sign(
