@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Building2, FolderKanban, Shield } from "lucide-react";
 import LoginForm from "@/components/auth/LoginForm";
+import SignUpForm from "@/components/auth/SignUpForm";
 import SetupAdminForm from "@/components/auth/SetupAdminForm";
 
 export default function HomeLoginPage() {
   const router = useRouter();
   const [requiresSetup, setRequiresSetup] = useState(false);
   const [statusReady, setStatusReady] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -23,6 +25,7 @@ export default function HomeLoginPage() {
         const data = await res.json();
         if (active) {
           setRequiresSetup(Boolean(data.requiresSetup));
+          setIsRegistering(Boolean(data.requiresSetup));
         }
       } catch {
         if (active) {
@@ -108,18 +111,33 @@ export default function HomeLoginPage() {
 
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              {requiresSetup ? "Create the first admin" : "Sign in to your account"}
+              {requiresSetup || isRegistering ? "Create your account" : "Sign in to your account"}
             </h1>
             <p className="text-gray-500 text-sm mt-1.5">
               {requiresSetup
                 ? "Finish the initial setup so the workspace can be accessed."
-                : "Welcome back. Enter your credentials below."}
+                : isRegistering
+                  ? "Create an account to get started."
+                  : "Welcome back. Enter your credentials below."}
             </p>
           </div>
 
           <div className="space-y-5">
-            {!statusReady ? null : requiresSetup ? <SetupAdminForm /> : <LoginForm />}
+            {!statusReady ? null : requiresSetup ? <SetupAdminForm /> : isRegistering ? <SignUpForm onToggle={() => setIsRegistering(false)} /> : <LoginForm />}
           </div>
+
+          {!requiresSetup && statusReady && (
+            <p className="text-sm text-center text-gray-500 mt-8">
+              {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
+              <button
+                type="button"
+                onClick={() => setIsRegistering((current) => !current)}
+                className="text-blue-600 font-semibold hover:text-blue-700 transition"
+              >
+                {isRegistering ? "Sign in" : "Create account"}
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>
