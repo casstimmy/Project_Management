@@ -1,12 +1,23 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import User from "@/models/User";
 import bcrypt from "bcrypt";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
-  await mongooseConnect();
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  await mongooseConnect();
+
+  const userCount = await User.countDocuments();
+  if (userCount > 0) {
+    const actor = await authenticate(req, res);
+    if (!actor) return;
+
+    if (actor.role !== "admin") {
+      return res.status(403).json({ error: "Only admins can create other admin users" });
+    }
   }
 
   const { name, email, password } = req.body;
@@ -15,7 +26,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const existingUser = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
     return res.status(409).json({ error: "User already exists" });
   }
@@ -24,7 +37,7 @@ export default async function handler(req, res) {
 
   const newUser = await User.create({
     name,
-    email,
+    email: normalizedEmail,
     password: hashedPassword,
     role: "admin",
   });

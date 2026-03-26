@@ -7,6 +7,7 @@ import FCAAssessment from "@/models/FCAAssessment";
 import MaintenancePlan from "@/models/MaintenancePlan";
 import Budget from "@/models/Budget";
 import Site from "@/models/Site";
+import { authenticate } from "@/lib/auth";
 import { applyRateLimit, apiLimiter } from "@/lib/rateLimit";
 
 // Server-side cache: stores dashboard result + timestamp
@@ -17,6 +18,8 @@ export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  if (!(await authenticate(req, res))) return;
 
   // Apply rate limiting (60 requests per minute per IP)
   if (!applyRateLimit(req, res, apiLimiter, 60)) return;
@@ -118,7 +121,7 @@ export default async function handler(req, res) {
         .populate("building", "name")
         .lean(),
       Budget.find({ fiscalYear: currentDate.getFullYear() })
-        .select("budgetType totalBudgeted totalActual totalVariance title")
+        .select("budgetType totalBudgeted totalActual totalVariance title fiscalYear")
         .lean(),
       Incident.aggregate([
         { $group: { _id: "$type", count: { $sum: 1 } } },

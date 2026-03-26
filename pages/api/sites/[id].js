@@ -1,7 +1,10 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Site from "@/models/Site";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { id } = req.query;
   const { method } = req;

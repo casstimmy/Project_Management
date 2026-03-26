@@ -2,8 +2,11 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Task from "@/models/Task";
 import Project from "@/models/Project";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { id } = req.query; // this is the task ID
 

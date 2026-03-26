@@ -2,8 +2,11 @@ import { mongooseConnect } from "@/lib/mongoose";
 import EmergencyPlan from "@/models/EmergencyPlan";
 import Site from "@/models/Site";
 import { sendApiError } from "@/lib/apiErrors";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { method } = req;
 

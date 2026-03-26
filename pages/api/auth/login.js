@@ -15,10 +15,17 @@ export default async function handler(req, res) {
   await mongooseConnect();
 
   const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
   if (!user) {
     return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  if (!user.isActive) {
+    return res.status(403).json({ error: "This account has been deactivated" });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -26,16 +33,16 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-const token = jwt.sign(
-  {
-    id: user._id,
-    name: user.name,      
-    email: user.email,    
-    role: user.role,
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: "7d" }
-);
+  const token = jwt.sign(
+    {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
 
   res.status(200).json({ token });

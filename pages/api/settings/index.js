@@ -1,7 +1,10 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Settings from "@/models/Settings";
+import { authorize } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authorize(req, res, ["admin"]))) return;
+
   await mongooseConnect();
 
   if (req.method === "GET") {

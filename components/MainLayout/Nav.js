@@ -46,6 +46,7 @@ export default function Nav({ children }) {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("appMode");
+    document.cookie = "token=; Path=/; Max-Age=0; SameSite=Lax";
     router.push("/");
   };
 

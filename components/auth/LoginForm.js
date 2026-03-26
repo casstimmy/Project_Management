@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { Building2, FolderKanban, ArrowLeft } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 
-function LoginForm({ onToggle }) {
+function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,6 +12,14 @@ function LoginForm({ onToggle }) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showModeSelect, setShowModeSelect] = useState(false);
   const [pendingToken, setPendingToken] = useState(null);
+
+  function persistSession(token, mode) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("appMode", mode);
+
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `token=${encodeURIComponent(token)}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax${secure}`;
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -35,8 +44,7 @@ function LoginForm({ onToggle }) {
 
       // Admin goes straight through — sees everything
       if (decoded.role === "admin") {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("appMode", "admin");
+        persistSession(data.token, "admin");
         router.push("/homePage");
       } else {
         // Non-admin must choose their workspace
@@ -51,8 +59,7 @@ function LoginForm({ onToggle }) {
   }
 
   function selectMode(mode) {
-    localStorage.setItem("token", pendingToken);
-    localStorage.setItem("appMode", mode);
+    persistSession(pendingToken, mode);
     router.push("/homePage");
   }
 
@@ -132,6 +139,11 @@ function LoginForm({ onToggle }) {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+        <div className="flex justify-end mt-1.5">
+          <Link href="/forgot-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium transition">
+            Forgot password?
+          </Link>
+        </div>
       </div>
 
       <button

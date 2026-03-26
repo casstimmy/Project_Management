@@ -3,8 +3,11 @@ import HSSEAudit from "@/models/HSSEAudit";
 import Site from "@/models/Site";
 import Building from "@/models/Building";
 import { sendApiError } from "@/lib/apiErrors";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { method } = req;
 

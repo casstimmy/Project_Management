@@ -1,21 +1,16 @@
 // /pages/api/tasks/today-overdue.js
 import { mongooseConnect } from "@/lib/mongoose";
 import Task from "@/models/Task";
-import jwt from "jsonwebtoken";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  const user = await authenticate(req, res);
+  if (!user) return;
+
   await mongooseConnect();
 
-  const { authorization } = req.headers;
-
-  if (!authorization) {
-    return res.status(401).json({ error: "Missing token" });
-  }
-
   try {
-    const token = authorization.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userEmail = decoded.email;
+    const userEmail = user.email;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);

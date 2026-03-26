@@ -4,10 +4,13 @@ import fs from "fs";
 import mime from "mime-types";
 
 import { mongooseConnect } from "@/lib/mongoose";
+import { authenticate } from "@/lib/auth";
 
 const S3BucketName = "opal-managment-system";
 
 export default async function ImageHandler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
 
   const form = new multiparty.Form();

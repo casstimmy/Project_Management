@@ -1,8 +1,11 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Project from "@/models/Project";
 import Space from "@/models/Space";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { method } = req;
 

@@ -1,25 +1,15 @@
 // /pages/api/tasks/personal.js
 import { mongooseConnect } from "@/lib/mongoose";
 import Task from "@/models/Task";
-import jwt from "jsonwebtoken";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  const user = await authenticate(req, res);
+  if (!user) return;
+
   await mongooseConnect();
 
-  const { authorization } = req.headers;
-  if (!authorization) {
-    return res.status(401).json({ error: "Missing token" });
-  }
-
-  let decoded;
-  try {
-    const token = authorization.split(" ")[1];
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(401).json({ error: "Invalid token" });
-  }
-
-  const email = decoded.email;
+  const email = user.email;
 
   if (req.method === "GET") {
     try {
@@ -50,7 +40,7 @@ export default async function handler(req, res) {
         status: status || "todo",
         startDate: new Date(),
         dueDate: dueDate || new Date(),
-        assignee: { name: decoded.name, email: decoded.email },
+        assignee: { name: user.name, email: user.email },
       });
 
       return res.status(201).json(task);

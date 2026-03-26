@@ -4,6 +4,7 @@ import Site from "@/models/Site";
 import Building from "@/models/Building";
 import FacilitySpace from "@/models/FacilitySpace";
 import { sendApiError } from "@/lib/apiErrors";
+import { authenticate } from "@/lib/auth";
 
 function normalizeAssetPayload(payload = {}) {
   const data = { ...payload };
@@ -24,6 +25,8 @@ function normalizeAssetPayload(payload = {}) {
 }
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { id } = req.query;
   const { method } = req;

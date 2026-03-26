@@ -3,8 +3,11 @@ import FacilitySpace from "@/models/FacilitySpace";
 import Building from "@/models/Building";
 import Asset from "@/models/Asset";
 import { sendApiError } from "@/lib/apiErrors";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { method } = req;
 

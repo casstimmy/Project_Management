@@ -4,8 +4,11 @@ import Site from "@/models/Site";
 import Building from "@/models/Building";
 import Project from "@/models/Project";
 import { sendApiError } from "@/lib/apiErrors";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
   const { method } = req;
 

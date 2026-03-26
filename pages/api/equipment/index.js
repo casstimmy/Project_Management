@@ -1,7 +1,10 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Equipment from "@/models/Equipment";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   const { method } = req;
   await mongooseConnect();
 

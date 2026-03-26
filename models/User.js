@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     role: {
       type: String,
@@ -17,6 +17,8 @@ const UserSchema = new mongoose.Schema(
     sites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Site" }], // accessible sites
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
+    resetToken: { type: String },
+    resetTokenExpiry: { type: Date },
     preferences: {
       theme: { type: String, enum: ["light", "dark", "system"], default: "light" },
       notifications: { type: Boolean, default: true },

@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd \"c:\\\\Users\\\\hp\\\\Desktop\\\\Projects\\\\Project Management\\\\project_management\" ; npm install nodemailer$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

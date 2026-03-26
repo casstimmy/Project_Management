@@ -1,8 +1,11 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import { Team } from "@/models/Team";
+import { authorize } from "@/lib/auth";
 
 export default async function handler(req, res) {
   const { method } = req;
+  if (!(await authorize(req, res, ["admin"]))) return;
+
   await mongooseConnect();
 
   try {

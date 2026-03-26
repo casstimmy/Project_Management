@@ -4,8 +4,11 @@ import Project from "@/models/Project";
 import Asset from "@/models/Asset";
 import Site from "@/models/Site";
 import Building from "@/models/Building";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  if (!(await authenticate(req, res))) return;
+
   await mongooseConnect();
 
   const {

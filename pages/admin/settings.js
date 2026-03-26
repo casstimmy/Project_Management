@@ -4,7 +4,7 @@ import Layout from "@/components/MainLayout/Layout";
 import Loader from "@/components/Loader";
 import { PageHeader, Button } from "@/components/ui/SharedComponents";
 import {
-  Settings, DollarSign, Database, RefreshCw, CheckCircle, AlertTriangle,
+  Settings, DollarSign, Database, RefreshCw, CheckCircle,
   Plus, Trash2, Edit2, Save, X, Shield, Layers, Tag, Wrench, BarChart3,
   Palette, ListChecks, Calendar, PieChart, ChevronDown, ChevronRight,
 } from "lucide-react";
@@ -96,8 +96,6 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-  const [seedResult, setSeedResult] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
 
@@ -182,19 +180,6 @@ export default function SettingsPage() {
     finally { setSaving(false); }
   };
 
-  // Seed
-  const handleSeedData = async () => {
-    if (!confirm("This will clear existing demo data and re-create fresh seed data. User accounts are preserved. Continue?")) return;
-    setSeeding(true); setSeedResult(null);
-    try {
-      const res = await fetch("/api/seed", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) { setSeedResult(data); toast.success("Demo data seeded!"); }
-      else toast.error(data.error || "Failed");
-    } catch { toast.error("Failed"); }
-    finally { setSeeding(false); }
-  };
-
   // ── CRUD helpers (per type) ──
   const addSimple = (key) => {
     if (!newSimple.trim()) return;
@@ -261,7 +246,6 @@ export default function SettingsPage() {
   const tabs = [
     { id: "general", label: "General", icon: Settings },
     { id: "constants", label: "System Data", icon: Database },
-    { id: "seed", label: "Demo Data", icon: Layers },
   ];
 
   const itemCount = (key, type) => {
@@ -612,40 +596,6 @@ export default function SettingsPage() {
         )}
 
         {/* ────────── SEED DATA TAB ────────── */}
-        {activeTab === "seed" && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600"><Database size={22} /></div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Demo Data</h2>
-                <p className="text-sm text-gray-500">Populate the system with comprehensive sample data for testing</p>
-              </div>
-            </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-              <div className="flex items-start gap-2">
-                <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium">Full System Seed</p>
-                  <p className="mt-1">This will <strong>clear and re-create</strong> demo data for: Sites, Buildings, Spaces, Assets, Equipment, Work Orders, Maintenance Plans, Budgets, Incidents, HSSE Audits, FCA Assessments, Emergency Plans, Projects, Tasks, and Teams. User accounts are preserved.</p>
-                </div>
-              </div>
-            </div>
-            <Button onClick={handleSeedData} disabled={seeding} variant="outline"
-              icon={seeding ? <RefreshCw size={14} className="animate-spin" /> : <Database size={14} />}>
-              {seeding ? "Seeding Data..." : "Seed Demo Data"}
-            </Button>
-            {seedResult && (
-              <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-green-800 mb-2">Seed completed successfully!</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-green-700">
-                  {Object.entries(seedResult.counts || {}).map(([k, c]) => (
-                    <div key={k} className="flex items-center gap-1.5"><CheckCircle size={12} /><span>{k}: {c}</span></div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </Layout>
   );

@@ -1,23 +1,13 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import Task from "@/models/Task";
 import Project from "@/models/Project";
-import jwt from "jsonwebtoken";
+import { authenticate } from "@/lib/auth";
 
 export default async function handler(req, res) {
+  const user = await authenticate(req, res);
+  if (!user) return;
+
   await mongooseConnect();
-
-  const { authorization } = req.headers;
-  if (!authorization) {
-    return res.status(401).json({ error: "Missing token" });
-  }
-
-  let decoded;
-  try {
-    const token = authorization.split(" ")[1];
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(401).json({ error: "Invalid token" });
-  }
 
   if (req.method === "POST") {
     try {
