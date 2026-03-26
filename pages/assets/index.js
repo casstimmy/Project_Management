@@ -76,24 +76,10 @@ export default function AssetsPage() {
   };
 
   useEffect(() => {
-    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
+    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch("/api/facility-spaces").then(r => r.json()).then(d => setFacilitySpaces(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (form.site) {
-      fetch(`/api/buildings?siteId=${form.site}`).then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
-    } else {
-      setBuildings([]);
-    }
-  }, [form.site]);
-
-  useEffect(() => {
-    if (form.building) {
-      fetch(`/api/facility-spaces?buildingId=${form.building}`).then(r => r.json()).then(d => setFacilitySpaces(Array.isArray(d) ? d : []));
-    } else {
-      setFacilitySpaces([]);
-    }
-  }, [form.building]);
 
   useEffect(() => {
     if (!showModal) {
@@ -129,6 +115,15 @@ export default function AssetsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
     setSubmitError("");
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setEditing(null);
+    setActiveTab("details");
+    setSubmitError("");
+    setFieldErrors({});
+    setShowModal(true);
   };
 
   const payloadFromForm = () => ({
@@ -193,6 +188,7 @@ export default function AssetsPage() {
 
   const openEdit = (asset) => {
     setEditing(asset);
+    setActiveTab("details");
     setForm({
       name: asset.name || "", description: asset.description || "",
       category: asset.category || "HVAC", status: asset.status || "in-service",
@@ -217,6 +213,12 @@ export default function AssetsPage() {
 
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : "—";
+  const filteredBuildings = form.site
+    ? buildings.filter((building) => building.site?._id === form.site || building.site === form.site)
+    : buildings;
+  const filteredSpaces = form.building
+    ? facilitySpaces.filter((space) => space.building?._id === form.building || space.building === form.building)
+    : facilitySpaces;
 
   const columns = [
     { header: "Image", render: (row) => (
@@ -278,7 +280,7 @@ export default function AssetsPage() {
           subtitle="Track and manage all facility assets"
           breadcrumbs={[{ label: "Dashboard", href: "/homePage" }, { label: "Asset Register" }]}
           actions={
-            <Button icon={<Plus size={16} />} onClick={() => { resetForm(); setEditing(null); setShowModal(true); }}>
+            <Button icon={<Plus size={16} />} onClick={openCreate}>
               Add Asset
             </Button>
           }
@@ -380,16 +382,63 @@ export default function AssetsPage() {
             {activeTab === "location" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Site" error={fieldErrors.site}>
-                  <Select aria-invalid={!!fieldErrors.site} value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value, building: "", facilitySpace: "" })}
-                    placeholder="Select site" options={sites.map(s => ({ value: s._id, label: s.name }))} />
+                  <Select
+                    aria-invalid={!!fieldErrors.site}
+                    value={form.site}
+                    onChange={(e) => {
+                      const nextSiteId = e.target.value;
+                      setForm((prev) => ({
+                        ...prev,
+                        site: nextSiteId,
+                        building: prev.building && buildings.some((building) => (building.site?._id === nextSiteId || building.site === nextSiteId) && building._id === prev.building) ? prev.building : "",
+                        facilitySpace: "",
+                      }));
+                      setFieldErrors((prev) => ({ ...prev, site: undefined, building: undefined, facilitySpace: undefined }));
+                      setSubmitError("");
+                    }}
+                    placeholder="Select site (optional)"
+                    options={sites.map(s => ({ value: s._id, label: s.name }))}
+                  />
                 </FormField>
                 <FormField label="Building" error={fieldErrors.building}>
-                  <Select aria-invalid={!!fieldErrors.building} value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value, facilitySpace: "" })}
-                    placeholder="Select building" options={buildings.map(b => ({ value: b._id, label: b.name }))} />
+                  <Select
+                    aria-invalid={!!fieldErrors.building}
+                    value={form.building}
+                    onChange={(e) => {
+                      const nextBuildingId = e.target.value;
+                      const selectedBuilding = buildings.find((building) => building._id === nextBuildingId);
+                      setForm((prev) => ({
+                        ...prev,
+                        site: selectedBuilding?.site?._id || selectedBuilding?.site || prev.site,
+                        building: nextBuildingId,
+                        facilitySpace: "",
+                      }));
+                      setFieldErrors((prev) => ({ ...prev, building: undefined, facilitySpace: undefined, site: undefined }));
+                      setSubmitError("");
+                    }}
+                    placeholder="Select building (optional)"
+                    options={filteredBuildings.map(b => ({ value: b._id, label: b.name }))}
+                  />
                 </FormField>
                 <FormField label="Space" className="md:col-span-2" error={fieldErrors.facilitySpace}>
-                  <Select aria-invalid={!!fieldErrors.facilitySpace} value={form.facilitySpace} onChange={(e) => updateField("facilitySpace", e.target.value)}
-                    placeholder="Select space (optional)" options={facilitySpaces.map((space) => ({ value: space._id, label: `${space.name}${space.floor !== undefined ? ` - Floor ${space.floor}` : ""}` }))} />
+                  <Select
+                    aria-invalid={!!fieldErrors.facilitySpace}
+                    value={form.facilitySpace}
+                    onChange={(e) => {
+                      const nextSpaceId = e.target.value;
+                      const selectedSpace = facilitySpaces.find((space) => space._id === nextSpaceId);
+                      setForm((prev) => ({
+                        ...prev,
+                        building: selectedSpace?.building?._id || selectedSpace?.building || prev.building,
+                        site: selectedSpace?.building?.site?._id || selectedSpace?.building?.site || prev.site,
+                        facilitySpace: nextSpaceId,
+                      }));
+                      setFieldErrors((prev) => ({ ...prev, facilitySpace: undefined, building: undefined, site: undefined }));
+                      setSubmitError("");
+                    }}
+                    placeholder="Select space (optional)"
+                    options={filteredSpaces.map((space) => ({ value: space._id, label: `${space.name}${space.floor !== undefined ? ` - Floor ${space.floor}` : ""}` }))}
+                  />
                 </FormField>
               </div>
             )}

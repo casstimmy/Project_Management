@@ -57,10 +57,41 @@ export default function SpacesPage() {
 
   useEffect(() => { fetchSpaces(); }, [fetchSpaces]);
 
+  useEffect(() => {
+    if (!showModal) {
+      setSubmitError("");
+      setFieldErrors({});
+    }
+  }, [showModal]);
+
   const resetForm = () => setForm({
     name: "", building: "", code: "", floor: 0, type: "office",
     area: "", capacity: "", status: "in-use", description: "",
   });
+
+  const openCreate = () => {
+    setEditing(null);
+    setSubmitError("");
+    setFieldErrors({});
+    setForm({
+      name: "",
+      building: buildings.length === 1 ? buildings[0]._id : "",
+      code: "",
+      floor: 0,
+      type: "office",
+      area: "",
+      capacity: "",
+      status: "in-use",
+      description: "",
+    });
+    setShowModal(true);
+  };
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    setSubmitError("");
+  };
 
   const handleSubmit = async () => {
     if (!form.name || !form.building) return toast.error("Name and building are required");
@@ -98,6 +129,8 @@ export default function SpacesPage() {
 
   const openEdit = (space) => {
     setEditing(space);
+    setSubmitError("");
+    setFieldErrors({});
     setForm({
       name: space.name || "", building: space.building?._id || "",
       code: space.code || "", floor: space.floor || 0,
@@ -144,7 +177,7 @@ export default function SpacesPage() {
           title="Spaces"
           subtitle="Manage rooms and spaces within buildings"
           breadcrumbs={[{ label: "Dashboard", href: "/homePage" }, { label: "Locations" }, { label: "Spaces" }]}
-          actions={<Button icon={<Plus size={16} />} onClick={() => { resetForm(); setEditing(null); setShowModal(true); }}>Add Space</Button>}
+          actions={<Button icon={<Plus size={16} />} onClick={openCreate}>Add Space</Button>}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -162,35 +195,36 @@ export default function SpacesPage() {
           title={editing ? "Edit Space" : "Add New Space"} size="lg"
           footer={<><Button variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button><Button onClick={handleSubmit} disabled={saving}>{saving ? "Saving..." : (editing ? "Update" : "Create")}</Button></>}
         >
+          {!buildings.length && <FormAlert tone="info" message="Create a building first before adding spaces." />}
           <FormAlert message={submitError} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label="Space Name" required className="md:col-span-2" error={fieldErrors.name}>
-              <Input aria-invalid={!!fieldErrors.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Conference Room A" />
+              <Input aria-invalid={!!fieldErrors.name} value={form.name} onChange={(e) => updateField("name", e.target.value)} placeholder="e.g., Conference Room A" />
             </FormField>
             <FormField label="Building" required error={fieldErrors.building}>
-              <Select aria-invalid={!!fieldErrors.building} value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value })}
+              <Select aria-invalid={!!fieldErrors.building} value={form.building} onChange={(e) => updateField("building", e.target.value)}
                 placeholder="Select building" options={buildings.map(b => ({ value: b._id, label: b.name }))} />
             </FormField>
             <FormField label="Space Code">
-              <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="e.g., B1-F2-R101" />
+              <Input value={form.code} onChange={(e) => updateField("code", e.target.value)} placeholder="e.g., B1-F2-R101" />
             </FormField>
             <FormField label="Floor">
-              <Input type="number" value={form.floor} onChange={(e) => setForm({ ...form, floor: Number(e.target.value) })} />
+              <Input type="number" value={form.floor} onChange={(e) => updateField("floor", Number(e.target.value))} />
             </FormField>
             <FormField label="Space Type">
-              <Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} options={SPACE_TYPES} />
+              <Select value={form.type} onChange={(e) => updateField("type", e.target.value)} options={SPACE_TYPES} />
             </FormField>
             <FormField label="Area (m²)">
-              <Input type="number" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} placeholder="e.g., 50" />
+              <Input type="number" value={form.area} onChange={(e) => updateField("area", e.target.value)} placeholder="e.g., 50" />
             </FormField>
             <FormField label="Capacity (persons)">
-              <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} placeholder="e.g., 20" />
+              <Input type="number" value={form.capacity} onChange={(e) => updateField("capacity", e.target.value)} placeholder="e.g., 20" />
             </FormField>
             <FormField label="Status">
-              <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUSES} />
+              <Select value={form.status} onChange={(e) => updateField("status", e.target.value)} options={STATUSES} />
             </FormField>
             <FormField label="Description" className="md:col-span-2">
-              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Additional details about this space" />
+              <Textarea rows={3} value={form.description} onChange={(e) => updateField("description", e.target.value)} placeholder="Additional details about this space" />
             </FormField>
           </div>
         </Modal>

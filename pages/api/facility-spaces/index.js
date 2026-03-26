@@ -16,7 +16,7 @@ export default async function handler(req, res) {
       const { id, buildingId, search } = req.query;
 
       if (id) {
-        const space = await FacilitySpace.findById(id).populate("building", "name code");
+        const space = await FacilitySpace.findById(id).populate("building", "name code site");
         if (!space) return res.status(404).json({ error: "Space not found" });
         return res.json(space);
       }
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       }
 
       const spaces = await FacilitySpace.find(filter)
-        .populate("building", "name code")
+        .populate("building", "name code site")
         .sort({ floor: 1, name: 1 });
       return res.json(spaces);
     }
