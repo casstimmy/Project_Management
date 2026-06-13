@@ -8,6 +8,7 @@ import {
 import { Building2, Plus, Edit, Trash2, Layers } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 export default function BuildingsPage() {
   const router = useRouter();
@@ -27,14 +28,14 @@ export default function BuildingsPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
+    fetchWithAuth("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
   }, []);
 
   const fetchBuildings = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(siteId && { siteId }), ...(search && { search }) });
-      const res = await fetch(`/api/buildings?${q}`);
+      const res = await fetchWithAuth(`/api/buildings?${q}`);
       const data = await res.json();
       setBuildings(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -51,8 +52,8 @@ export default function BuildingsPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/buildings", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      const res = await fetchWithAuth("/api/buildings", {
+        method, body: JSON.stringify(body),
       });
       if (res.ok) {
         toast.success(editing ? "Updated" : "Created");
@@ -73,7 +74,7 @@ export default function BuildingsPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete building?")) return;
-    await fetch(`/api/buildings?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/buildings?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchBuildings();
   };
 

@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
 import { formatCurrency } from "@/lib/currency";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const CONDITION_RATINGS = [
   { value: 1, label: "1 - Critical (Immediate Replacement)" },
@@ -46,13 +47,13 @@ export default function FCAPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
+    fetchWithAuth("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
   }, []);
 
   const fetchFCA = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/fca?${search ? `search=${search}` : ""}`);
+      const res = await fetchWithAuth(`/api/fca?${search ? `search=${search}` : ""}`);
       const data = await res.json();
       setAssessments(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -103,8 +104,8 @@ export default function FCAPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/fca", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/fca", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Assessment updated" : "Assessment created");
@@ -125,7 +126,7 @@ export default function FCAPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this assessment?")) return;
-    await fetch(`/api/fca?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/fca?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchFCA();
   };
 

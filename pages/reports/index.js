@@ -1,11 +1,12 @@
 import { useState } from "react";
 import Layout from "@/components/MainLayout/Layout";
-import { PageHeader, Button, StatCard } from "@/components/ui/SharedComponents";
+import { PageHeader, Button, StatCard, Modal, FormField, Input } from "@/components/ui/SharedComponents";
 import {
   FileText, Download, BarChart3, ClipboardCheck, ShieldCheck,
-  Package, Wrench, DollarSign, AlertOctagon, Calendar,
+  Package, Wrench, DollarSign, AlertOctagon, Calendar, Share2, Mail, MessageCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const REPORT_TYPES = [
   {
@@ -78,11 +79,14 @@ const colorMap = {
 
 export default function ReportsPage() {
   const [generating, setGenerating] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(null);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
 
   const handleExportCSV = async (report) => {
     setGenerating(report.id);
     try {
-      const res = await fetch(report.endpoint);
+      const res = await fetchWithAuth(report.endpoint);
       const data = await res.json();
       const items = data.assets || (Array.isArray(data) ? data : []);
 
@@ -145,7 +149,7 @@ export default function ReportsPage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">{report.title}</h3>
                 <p className="text-sm text-gray-500 mb-4 leading-relaxed">{report.description}</p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     size="sm"
                     icon={<Download size={14} />}
@@ -154,11 +158,68 @@ export default function ReportsPage() {
                   >
                     {generating === report.id ? "Generating..." : "Export CSV"}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={<Share2 size={14} />}
+                    onClick={() => { setShowShareModal(report); setShareEmail(""); setShareMessage(""); }}
+                  >
+                    Share
+                  </Button>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Share Modal */}
+        <Modal isOpen={!!showShareModal} onClose={() => setShowShareModal(null)} title={`Share Report: ${showShareModal?.title || ""}`} size="md">
+          {showShareModal && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">Share this report via email or messaging platforms.</p>
+
+              {/* Email sharing */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Mail size={16} className="text-blue-500" />
+                  <h4 className="text-sm font-semibold text-gray-700">Share via Email</h4>
+                </div>
+                <FormField label="Recipient Email">
+                  <Input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} placeholder="team@company.com" />
+                </FormField>
+                <FormField label="Message (optional)">
+                  <Input value={shareMessage} onChange={(e) => setShareMessage(e.target.value)} placeholder="Please review the attached report" />
+                </FormField>
+                <Button size="sm" icon={<Mail size={14} />} onClick={() => {
+                  if (!shareEmail) return toast.error("Enter an email address");
+                  const subject = encodeURIComponent(`${showShareModal.title} - OPAL Facility Management`);
+                  const body = encodeURIComponent(`${shareMessage || "Please find the report details below."}\n\nReport: ${showShareModal.title}\n${showShareModal.description}\n\nGenerated from OPAL Facility Management System`);
+                  window.open(`mailto:${shareEmail}?subject=${subject}&body=${body}`);
+                  toast.success("Email client opened");
+                  setShowShareModal(null);
+                }}>
+                  Send Email
+                </Button>
+              </div>
+
+              {/* WhatsApp sharing */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageCircle size={16} className="text-green-500" />
+                  <h4 className="text-sm font-semibold text-gray-700">Share via WhatsApp</h4>
+                </div>
+                <Button size="sm" variant="secondary" icon={<MessageCircle size={14} />} onClick={() => {
+                  const text = encodeURIComponent(`📊 ${showShareModal.title}\n\n${showShareModal.description}\n\nGenerated from OPAL Facility Management System`);
+                  window.open(`https://wa.me/?text=${text}`, "_blank");
+                  toast.success("WhatsApp opened");
+                  setShowShareModal(null);
+                }}>
+                  Share on WhatsApp
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </Layout>
   );

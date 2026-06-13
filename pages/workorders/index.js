@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
 import { formatCurrency } from "@/lib/currency";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const WO_TYPES = [
   { value: "preventive", label: "Preventive" }, { value: "predictive", label: "Predictive" },
@@ -51,14 +52,14 @@ export default function WorkOrdersPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    fetch("/api/assets").then(r => r.json()).then(d => setAssets(d.assets || (Array.isArray(d) ? d : [])));
+    fetchWithAuth("/api/assets").then(r => r.json()).then(d => setAssets(d.assets || (Array.isArray(d) ? d : [])));
   }, []);
 
   const fetchWO = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }), ...(statusFilter && { status: statusFilter }) });
-      const res = await fetch(`/api/workorders?${q}`);
+      const res = await fetchWithAuth(`/api/workorders?${q}`);
       const data = await res.json();
       setWorkOrders(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -84,8 +85,8 @@ export default function WorkOrdersPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/workorders", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/workorders", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Work order updated" : "Work order created");
@@ -107,7 +108,7 @@ export default function WorkOrdersPage() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this work order?")) return;
     try {
-      await fetch(`/api/workorders?id=${id}`, { method: "DELETE" });
+      await fetchWithAuth(`/api/workorders?id=${id}`, { method: "DELETE" });
       toast.success("Deleted"); fetchWO();
     } catch { toast.error("Failed to delete"); }
   };

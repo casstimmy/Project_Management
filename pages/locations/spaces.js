@@ -7,6 +7,7 @@ import {
 import { Layers, Plus, Edit, Trash2, Eye, Building2, MapPin } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const SPACE_TYPES = [
   { value: "office", label: "Office" }, { value: "meeting-room", label: "Meeting Room" },
@@ -41,14 +42,14 @@ export default function SpacesPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
+    fetchWithAuth("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
   const fetchSpaces = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }) });
-      const res = await fetch(`/api/facility-spaces?${q}`);
+      const res = await fetchWithAuth(`/api/facility-spaces?${q}`);
       const data = await res.json();
       setSpaces(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -101,8 +102,8 @@ export default function SpacesPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/facility-spaces", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/facility-spaces", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Space updated" : "Space created");
@@ -123,7 +124,7 @@ export default function SpacesPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this space?")) return;
-    await fetch(`/api/facility-spaces?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/facility-spaces?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchSpaces();
   };
 

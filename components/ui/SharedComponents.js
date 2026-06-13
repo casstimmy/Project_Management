@@ -54,12 +54,12 @@ export function StatCard({ icon, label, value, trend, trendUp, color = "blue", s
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-xl border ${c.border} p-5 hover:shadow-md transition-all duration-200 ${onClick ? "cursor-pointer" : ""}`}
+      className={`bg-white rounded-md border ${c.border} p-5 hover:border-gray-300 transition-colors ${onClick ? "cursor-pointer" : ""}`}
     >
       <div className="flex items-start justify-between">
-        <div className={`${c.bg} ${c.text} p-2.5 rounded-lg`}>{icon}</div>
+        <div className={`${c.bg} ${c.text} p-2.5 rounded-md`}>{icon}</div>
         {trend !== undefined && (
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${trendUp ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
+          <span className={`text-xs font-medium px-2 py-1 rounded ${trendUp ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
             {trendUp ? "+" : ""}{trend}%
           </span>
         )}
@@ -92,7 +92,7 @@ export function DataTable({
   actions,
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-md border border-gray-200 overflow-hidden">
       {/* Toolbar */}
       <div className="px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {onSearch && (
@@ -103,7 +103,7 @@ export function DataTable({
               placeholder={searchPlaceholder}
               value={searchValue || ""}
               onChange={(e) => onSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         )}
@@ -167,7 +167,7 @@ export function DataTable({
             <button
               onClick={() => onPageChange?.(page - 1)}
               disabled={page <= 1}
-              className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={16} />
             </button>
@@ -175,7 +175,7 @@ export function DataTable({
             <button
               onClick={() => onPageChange?.(page + 1)}
               disabled={page * pageSize >= totalItems}
-              className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronRight size={16} />
             </button>
@@ -234,7 +234,7 @@ export function StatusBadge({ status, size = "sm" }) {
   const sizeClass = size === "xs" ? "text-xs px-1.5 py-0.5" : "text-xs px-2.5 py-1";
 
   return (
-    <span className={`${s.bg} ${s.text} ${sizeClass} rounded-full font-medium capitalize inline-block`}>
+    <span className={`${s.bg} ${s.text} ${sizeClass} rounded font-medium capitalize inline-block`}>
       {s.label}
     </span>
   );
@@ -254,7 +254,7 @@ export function PriorityBadge({ priority }) {
   const p = map[priority] || map.medium;
 
   return (
-    <span className={`${p.bg} ${p.text} text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1.5 capitalize`}>
+    <span className={`${p.bg} ${p.text} text-xs px-2.5 py-1 rounded font-medium inline-flex items-center gap-1.5 capitalize`}>
       <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
       {priority}
     </span>
@@ -266,10 +266,10 @@ export function PriorityBadge({ priority }) {
  */
 export function Button({ children, variant = "primary", size = "md", icon, onClick, disabled, className = "", type = "button" }) {
   const variants = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm",
+    primary: "bg-blue-600 text-white hover:bg-blue-700",
     secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-    success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
-    danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
+    success: "bg-emerald-600 text-white hover:bg-emerald-700",
+    danger: "bg-red-600 text-white hover:bg-red-700",
     outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
     ghost: "text-gray-600 hover:bg-gray-100",
   };
@@ -285,7 +285,7 @@ export function Button({ children, variant = "primary", size = "md", icon, onCli
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-2 font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center gap-2 font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {icon}
       {children}
@@ -302,7 +302,7 @@ export function FormAlert({ message, tone = "error" }) {
   };
 
   return (
-    <div className={`rounded-lg border px-4 py-3 text-sm ${tones[tone] || tones.error}`}>
+    <div className={`rounded-md border px-4 py-3 text-sm ${tones[tone] || tones.error}`}>
       {message}
     </div>
   );
@@ -332,7 +332,7 @@ export function FormField({ label, required, error, children, className = "" }) 
 export function Input({ className = "", ...props }) {
   return (
     <input
-      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
+      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
       {...props}
     />
   );
@@ -344,7 +344,7 @@ export function Input({ className = "", ...props }) {
 export function Select({ options, placeholder, className = "", ...props }) {
   return (
     <select
-      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
+      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
       {...props}
     >
       {placeholder && <option value="">{placeholder}</option>}
@@ -363,7 +363,7 @@ export function Select({ options, placeholder, className = "", ...props }) {
 export function Textarea({ className = "", ...props }) {
   return (
     <textarea
-      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
+      className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none placeholder:text-gray-400 aria-[invalid=true]:border-red-300 aria-[invalid=true]:bg-red-50/40 aria-[invalid=true]:focus:ring-red-500 ${className}`}
       {...props}
     />
   );
@@ -385,11 +385,11 @@ export function Modal({ isOpen, onClose, title, children, size = "md", footer })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-white rounded-xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] flex flex-col animate-fade-in`}>
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className={`relative bg-white rounded-md shadow-lg w-full ${sizes[size]} max-h-[90vh] flex flex-col`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 transition text-gray-400 hover:text-gray-600">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 5l10 10M15 5L5 15" />
             </svg>
@@ -397,7 +397,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md", footer })
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50 rounded-b-xl">
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50 rounded-b-md">
             {footer}
           </div>
         )}
@@ -427,7 +427,7 @@ export function Tabs({ tabs, activeTab, onChange }) {
               {tab.icon}
               {tab.label}
               {tab.count !== undefined && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-500"}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded ${activeTab === tab.id ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-500"}`}>
                   {tab.count}
                 </span>
               )}

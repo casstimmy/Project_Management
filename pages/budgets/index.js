@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as ReChart, Pie, Cell } from "recharts";
 import { readApiError } from "@/lib/clientApi";
 import { formatCurrency, formatNumber, formatCompactCurrency } from "@/lib/currency";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const OPEX_CATEGORIES = [
   "Utilities", "Cleaning", "Security", "Landscaping", "Waste Management",
@@ -51,11 +52,13 @@ export default function BudgetsPage() {
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [uploading, setUploading] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
+  const [csvImporting, setCsvImporting] = useState(false);
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/budgets?${search ? `search=${search}` : ""}`);
+      const res = await fetchWithAuth(`/api/budgets?${search ? `search=${search}` : ""}`);
       const data = await res.json();
       setBudgets(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -65,12 +68,12 @@ export default function BudgetsPage() {
   useEffect(() => { fetchBudgets(); }, [fetchBudgets]);
 
   useEffect(() => {
-    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : [])).catch(() => {});
+    fetchWithAuth("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (form.site) {
-      fetch(`/api/buildings?siteId=${form.site}`).then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
+      fetchWithAuth(`/api/buildings?siteId=${form.site}`).then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
     } else {
       setBuildings([]);
     }
@@ -91,8 +94,8 @@ export default function BudgetsPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/budgets", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/budgets", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Budget updated" : "Budget created");
@@ -113,7 +116,7 @@ export default function BudgetsPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this budget?")) return;
-    await fetch(`/api/budgets?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/budgets?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchBudgets();
   };
 
@@ -131,7 +134,51 @@ export default function BudgetsPage() {
     setForm({ ...form, lineItems: form.lineItems.filter((_, idx) => idx !== i) });
   };
 
+  // CSV Import handler
+  const handleCsvImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".csv")) return toast.error("Please select a CSV file");
 
+    setCsvImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) return toast.error("CSV must have a header row and at least one data row");
+
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+      const rows = lines.slice(1).map(line => {
+        const values = line.split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = values[i] || ""; });
+        return obj;
+      });
+
+      // Map CSV columns to line items
+      // Expected columns: description/item, category, budgeted/budget_amount, actual/actual_amount
+      const lineItems = rows.map(row => ({
+        description: row.description || row.item || row.name || "",
+        category: row.category || row.type || "",
+        budgetedAmount: Number(row.budgeted || row.budget_amount || row.budgeted_amount || row.budget || 0),
+        actualAmount: Number(row.actual || row.actual_amount || row.actuals || 0),
+      })).filter(li => li.description || li.category);
+
+      if (lineItems.length === 0) {
+        toast.error("No valid line items found. Ensure CSV has columns: description, category, budgeted, actual");
+        return;
+      }
+
+      setForm(prev => ({ ...prev, lineItems: [...prev.lineItems.filter(li => li.description), ...lineItems] }));
+      toast.success(`Imported ${lineItems.length} line items from CSV`);
+      setShowCsvImport(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to parse CSV file");
+    } finally {
+      setCsvImporting(false);
+      e.target.value = "";
+    }
+  };
 
   const totalBudgeted = budgets.reduce((s, b) => s + (b.totalBudgeted || 0), 0);
   const totalActual = budgets.reduce((s, b) => s + (b.totalActual || 0), 0);
@@ -318,8 +365,16 @@ export default function BudgetsPage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-semibold text-gray-700">Line Items</h4>
-                <Button variant="ghost" size="xs" icon={<Plus size={14} />} onClick={addLineItem}>Add Item</Button>
+                <div className="flex gap-2">
+                  <label className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 border border-green-200">
+                    <Upload size={12} />
+                    Import CSV
+                    <input type="file" className="hidden" accept=".csv" onChange={handleCsvImport} disabled={csvImporting} />
+                  </label>
+                  <Button variant="ghost" size="xs" icon={<Plus size={14} />} onClick={addLineItem}>Add Item</Button>
+                </div>
               </div>
+              <p className="text-xs text-gray-400 mb-2">CSV columns: description, category, budgeted, actual</p>
               <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                 {form.lineItems.map((item, i) => (
                   <div key={i} className="grid grid-cols-12 gap-2 bg-gray-50 rounded-lg p-3 items-center">
@@ -384,7 +439,9 @@ export default function BudgetsPage() {
                   try {
                     const formData = new FormData();
                     formData.append('file', file);
-                    const res = await axios.post('/api/upload', formData);
+                    const res = await axios.post('/api/upload', formData, {
+                      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                    });
                     const url = res.data.links?.[0];
                     if (url) {
                       setForm(prev => ({ ...prev, documents: [...(prev.documents || []), { name: file.name, url }] }));

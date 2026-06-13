@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { readApiError, toOptionalDate, toOptionalNumber, toOptionalObjectId } from "@/lib/clientApi";
 import { ASSET_CATEGORIES, MAINTENANCE_STRATEGIES } from "@/lib/constants";
 import { formatCurrency } from "@/lib/currency";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const STATUSES = [
   { value: "in-service", label: "In Service" },
@@ -57,7 +58,7 @@ export default function AssetsPage() {
       setUploading(true);
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetchWithAuth("/api/upload", { method: "POST", body: formData });
       if (res.ok) {
         const data = await res.json();
         const url = data.links?.[0];
@@ -76,9 +77,9 @@ export default function AssetsPage() {
   };
 
   useEffect(() => {
-    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : [])).catch(() => {});
-    fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
-    fetch("/api/facility-spaces").then(r => r.json()).then(d => setFacilitySpaces(Array.isArray(d) ? d : [])).catch(() => {});
+    fetchWithAuth("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : [])).catch(() => {});
+    fetchWithAuth("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : [])).catch(() => {});
+    fetchWithAuth("/api/facility-spaces").then(r => r.json()).then(d => setFacilitySpaces(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -92,7 +93,7 @@ export default function AssetsPage() {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }) });
-      const res = await fetch(`/api/assets?${q}`);
+      const res = await fetchWithAuth(`/api/assets?${q}`);
       const data = await res.json();
       setAssets(data.assets || (Array.isArray(data) ? data : []));
     } catch (err) { console.error(err); }
@@ -158,8 +159,8 @@ export default function AssetsPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/assets", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/assets", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Asset updated" : "Asset created");
@@ -181,7 +182,7 @@ export default function AssetsPage() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this asset?")) return;
     try {
-      await fetch(`/api/assets/${id}`, { method: "DELETE" });
+      await fetchWithAuth(`/api/assets/${id}`, { method: "DELETE" });
       toast.success("Asset deleted"); fetchAssets();
     } catch { toast.error("Failed to delete"); }
   };

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const INCIDENT_TYPES = [
   { value: "injury", label: "Injury" }, { value: "near-miss", label: "Near Miss" },
@@ -43,14 +44,14 @@ export default function IncidentsPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
+    fetchWithAuth("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
   }, []);
 
   const fetchIncidents = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }) });
-      const res = await fetch(`/api/incidents?${q}`);
+      const res = await fetchWithAuth(`/api/incidents?${q}`);
       const data = await res.json();
       setIncidents(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -75,8 +76,8 @@ export default function IncidentsPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/incidents", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/incidents", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Incident updated" : "Incident reported");
@@ -97,7 +98,7 @@ export default function IncidentsPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this incident?")) return;
-    await fetch(`/api/incidents?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/incidents?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchIncidents();
   };
 

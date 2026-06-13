@@ -62,7 +62,10 @@ export default function TeamForm({ _id }) {
         const formData = new FormData();
         formData.append("file", file);
 
-        const res = await axios.post("/api/upload", formData);
+        const token = localStorage.getItem("token");
+        const res = await axios.post("/api/upload", formData, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         imageUrl = res.data.links?.[0]; // Ensure this returns public URL
       } catch (err) {
         setSaving(false);

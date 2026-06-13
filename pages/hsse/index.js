@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const AUDIT_TYPES = [
   { value: "health-safety", label: "Health & Safety" }, { value: "security", label: "Security" },
@@ -45,14 +46,14 @@ export default function HSSEPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
-    fetch("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
+    fetchWithAuth("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
+    fetchWithAuth("/api/buildings").then(r => r.json()).then(d => setBuildings(Array.isArray(d) ? d : []));
   }, []);
 
   const fetchAudits = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/hsse?${search ? `search=${search}` : ""}`);
+      const res = await fetchWithAuth(`/api/hsse?${search ? `search=${search}` : ""}`);
       const data = await res.json();
       setAudits(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -105,8 +106,8 @@ export default function HSSEPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/hsse", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/hsse", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Audit updated" : "Audit created");
@@ -127,7 +128,7 @@ export default function HSSEPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this audit?")) return;
-    await fetch(`/api/hsse?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/hsse?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchAudits();
   };
 

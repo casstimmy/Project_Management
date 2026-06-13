@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 export default function SitesPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function SitesPage() {
   const fetchSites = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/sites?search=${search}`);
+      const res = await fetchWithAuth(`/api/sites?search=${search}`);
       const data = await res.json();
       setSites(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -51,9 +52,8 @@ export default function SitesPage() {
       setFieldErrors({});
       const method = editingSite ? "PUT" : "POST";
       const body = editingSite ? { ...form, _id: editingSite._id } : form;
-      const res = await fetch("/api/sites", {
+      const res = await fetchWithAuth("/api/sites", {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (res.ok) {
@@ -79,7 +79,7 @@ export default function SitesPage() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this site?")) return;
     try {
-      await fetch(`/api/sites?id=${id}`, { method: "DELETE" });
+      await fetchWithAuth(`/api/sites?id=${id}`, { method: "DELETE" });
       toast.success("Site deleted");
       fetchSites();
     } catch { toast.error("Failed to delete"); }

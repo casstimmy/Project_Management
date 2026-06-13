@@ -30,8 +30,12 @@ export default function EquipmentForm({ projectId, _id, initialData, onClose, on
         const formData = new FormData();
         formData.append("file", file);
 
+        const token = localStorage.getItem("token");
         const uploadRes = await axios.post("/api/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: {
+            "Content-Type": "multipart/form-data",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
         });
 
         if (uploadRes.data.links && uploadRes.data.links.length > 0) {

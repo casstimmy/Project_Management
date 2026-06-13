@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { jwtDecode } from "jwt-decode";
 import { formatCurrency } from "@/lib/currency";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 import Link from "next/link";
 
 const CHART_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"];
@@ -43,7 +44,7 @@ export default function HomePage() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch("/api/projects");
+      const res = await fetchWithAuth("/api/projects");
       if (res.ok) {
         const data = await res.json();
         setProjects(Array.isArray(data) ? data : []);
@@ -55,7 +56,7 @@ export default function HomePage() {
 
   const fetchDashboard = async () => {
     try {
-      const res = await fetch("/api/dashboard");
+      const res = await fetchWithAuth("/api/dashboard");
       if (res.ok) {
         const data = await res.json();
         setDashboard(data);
@@ -81,18 +82,18 @@ export default function HomePage() {
         <DashboardSkeleton />
       ) : (
       <div className="max-w-7xl mx-auto">
-        {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        {/* Header */}
+        <div className="bg-white border border-gray-200 rounded-md p-5 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold">
+              <h1 className="text-xl font-semibold text-gray-900">
                 Good {timeOfDay}, {user?.name ? user.name.split(" ")[0] : "Guest"}
               </h1>
-              <p className="text-blue-100 mt-1 text-sm">
-                Welcome to OPAL shire — your facility management overview
+              <p className="text-gray-500 mt-1 text-sm">
+                OPAL Facility Management — operations overview
               </p>
             </div>
-            <div className="mt-4 md:mt-0 flex items-center gap-2 text-sm text-blue-100">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
               <Calendar size={16} />
               {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
             </div>
@@ -122,7 +123,7 @@ export default function HomePage() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Work Orders by Status */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Work Orders by Status</h3>
             {dashboard?.charts?.workOrdersByStatus?.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -140,7 +141,7 @@ export default function HomePage() {
           </div>
 
           {/* Assets by Category */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Assets by Category</h3>
             {dashboard?.charts?.assetsByCategory?.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -162,7 +163,7 @@ export default function HomePage() {
         {/* Second Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Work Orders by Priority */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Work Orders by Priority</h3>
             {dashboard?.charts?.workOrdersByPriority?.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -185,7 +186,7 @@ export default function HomePage() {
           </div>
 
           {/* Incidents by Type */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Incidents by Type</h3>
             {dashboard?.charts?.incidentsByType?.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -204,7 +205,7 @@ export default function HomePage() {
         </div>
 
         {/* Project Overview */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-md border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <FolderKanban size={16} className="text-blue-500" />
@@ -223,7 +224,7 @@ export default function HomePage() {
                 const budgetTotal = (proj.budget || []).reduce((s, b) => s + (b.amount || 0), 0);
 
                 return (
-                  <div key={proj._id} className="border border-gray-100 rounded-lg overflow-hidden">
+                  <div key={proj._id} className="border border-gray-100 rounded-md overflow-hidden">
                     <button
                       onClick={() => setExpandedProject(isExpanded ? null : proj._id)}
                       className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition text-left"
@@ -249,7 +250,7 @@ export default function HomePage() {
                         {proj.budget?.length > 0 && (
                           <div className="flex gap-2 flex-wrap mb-2">
                             {proj.budget.map((b, i) => (
-                              <span key={i} className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                              <span key={i} className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
                                 {b.category}: {formatCurrency(b.amount)}
                               </span>
                             ))}
@@ -271,13 +272,13 @@ export default function HomePage() {
         </div>
 
         {/* Quick Access */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-md border border-gray-200 p-6 mb-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Quick Access</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {quickLinks.map((link) => (
               <Link key={link.href} href={link.href}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200 group">
-                <div className={`p-2.5 rounded-lg ${link.color}`}>{link.icon}</div>
+                className="flex flex-col items-center gap-2 p-4 rounded-md border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-colors group">
+                <div className={`p-2.5 rounded-md ${link.color}`}>{link.icon}</div>
                 <span className="text-xs font-medium text-gray-600 group-hover:text-blue-600 text-center">{link.label}</span>
               </Link>
             ))}
@@ -287,7 +288,7 @@ export default function HomePage() {
         {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent FCA */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-md border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-700">Recent FCA Assessments</h3>
               <Link href="/fca" className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
@@ -297,12 +298,12 @@ export default function HomePage() {
             {dashboard?.recent?.fcaAssessments?.length > 0 ? (
               <div className="space-y-3">
                 {dashboard.recent.fcaAssessments.map((item) => (
-                  <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                  <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-md px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{item.building?.name || "—"}</p>
                       <p className="text-xs text-gray-500">{item.assessor || "—"}</p>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded ${
                       (item.facilityConditionIndex || 0) <= 0.1 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
                     }`}>
                       FCI: {((item.facilityConditionIndex || 0) * 100).toFixed(1)}%
@@ -316,7 +317,8 @@ export default function HomePage() {
           </div>
 
           {/* Recent Budgets */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          {/* Recent Budgets */}
+          <div className="bg-white rounded-md border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-700">Recent Budgets</h3>
               <Link href="/budgets" className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
@@ -326,12 +328,12 @@ export default function HomePage() {
             {dashboard?.recent?.budgets?.length > 0 ? (
               <div className="space-y-3">
                 {dashboard.recent.budgets.map((item) => (
-                  <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                  <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-md px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{item.title}</p>
                       <p className="text-xs text-gray-500">{item.budgetType} • FY{item.fiscalYear}</p>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded ${
                       (item.totalVariance || 0) >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
                     }`}>
                       {formatCurrency(item.totalVariance)}

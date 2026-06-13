@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { readApiError } from "@/lib/clientApi";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 export default function EmergencyPage() {
   const [plans, setPlans] = useState([]);
@@ -32,13 +33,13 @@ export default function EmergencyPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    fetch("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
+    fetchWithAuth("/api/sites").then(r => r.json()).then(d => setSites(Array.isArray(d) ? d : []));
   }, []);
 
   const fetchPlans = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/emergency?${search ? `search=${search}` : ""}`);
+      const res = await fetchWithAuth(`/api/emergency?${search ? `search=${search}` : ""}`);
       const data = await res.json();
       setPlans(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -70,8 +71,8 @@ export default function EmergencyPage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/emergency", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/emergency", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Plan updated" : "Plan created");
@@ -92,7 +93,7 @@ export default function EmergencyPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this plan?")) return;
-    await fetch(`/api/emergency?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/emergency?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchPlans();
   };
 

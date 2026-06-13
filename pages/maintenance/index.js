@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import axios from "axios";
 import { readApiError } from "@/lib/clientApi";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 const FREQUENCIES = [
   { value: "daily", label: "Daily" }, { value: "weekly", label: "Weekly" },
@@ -45,14 +46,14 @@ export default function MaintenancePage() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/assets").then(r => r.json()).then(d => setAssets(d.assets || (Array.isArray(d) ? d : [])));
+    fetchWithAuth("/api/assets").then(r => r.json()).then(d => setAssets(d.assets || (Array.isArray(d) ? d : [])));
   }, []);
 
   const fetchPlans = useCallback(async () => {
     setLoading(true);
     try {
       const q = new URLSearchParams({ ...(search && { search }) });
-      const res = await fetch(`/api/maintenance?${q}`);
+      const res = await fetchWithAuth(`/api/maintenance?${q}`);
       const data = await res.json();
       setPlans(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -76,8 +77,8 @@ export default function MaintenancePage() {
       setSaving(true);
       setSubmitError("");
       setFieldErrors({});
-      const res = await fetch("/api/maintenance", {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      const res = await fetchWithAuth("/api/maintenance", {
+        method, body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editing ? "Plan updated" : "Plan created");
@@ -98,7 +99,7 @@ export default function MaintenancePage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this plan?")) return;
-    await fetch(`/api/maintenance?id=${id}`, { method: "DELETE" });
+    await fetchWithAuth(`/api/maintenance?id=${id}`, { method: "DELETE" });
     toast.success("Deleted"); fetchPlans();
   };
 
@@ -154,6 +155,58 @@ export default function MaintenancePage() {
   ];
 
   const activeCount = plans.filter(p => p.status === "active").length;
+  const [csvImporting, setCsvImporting] = useState(false);
+
+  const handleCsvImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".csv")) return toast.error("Please select a CSV file");
+
+    setCsvImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) return toast.error("CSV must have a header and at least one data row");
+
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+      const rows = lines.slice(1).map(line => {
+        const values = line.split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = values[i] || ""; });
+        return obj;
+      });
+
+      let imported = 0;
+      for (const row of rows) {
+        const plan = {
+          title: row.title || row.name || row.plan || "",
+          maintenanceType: (row.type || row.maintenance_type || "PPM").toUpperCase(),
+          frequency: row.frequency || "monthly",
+          estimatedCost: Number(row.estimated_cost || row.cost || 0),
+          actualCost: Number(row.actual_cost || 0),
+          status: row.status || "active",
+          description: row.description || row.notes || "",
+        };
+        if (!plan.title) continue;
+        if (!["PPM", "PdM", "RTF"].includes(plan.maintenanceType)) plan.maintenanceType = "PPM";
+
+        const res = await fetchWithAuth("/api/maintenance", {
+          method: "POST", body: JSON.stringify(plan),
+        });
+        if (res.ok) imported++;
+      }
+
+      toast.success(`Imported ${imported} maintenance plan(s)`);
+      fetchPlans();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to parse CSV file");
+    } finally {
+      setCsvImporting(false);
+      e.target.value = "";
+    }
+  };
+
   const overdueCount = plans.filter(p => p.nextDueDate && new Date(p.nextDueDate) < new Date() && p.status === "active").length;
 
   return (
@@ -163,7 +216,16 @@ export default function MaintenancePage() {
           title="Maintenance Plans"
           subtitle="Schedule and manage preventive maintenance"
           breadcrumbs={[{ label: "Dashboard", href: "/homePage" }, { label: "Maintenance" }, { label: "Plans" }]}
-          actions={<Button icon={<Plus size={16} />} onClick={() => { resetForm(); setEditing(null); setShowModal(true); }}>New Plan</Button>}
+          actions={
+            <div className="flex gap-2">
+              <label className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg cursor-pointer border transition ${csvImporting ? "opacity-50 pointer-events-none border-gray-200 text-gray-400" : "border-green-200 text-green-700 bg-green-50 hover:bg-green-100"}`}>
+                <Upload size={14} />
+                {csvImporting ? "Importing..." : "Import CSV"}
+                <input type="file" className="hidden" accept=".csv" onChange={handleCsvImport} disabled={csvImporting} />
+              </label>
+              <Button icon={<Plus size={16} />} onClick={() => { resetForm(); setEditing(null); setShowModal(true); }}>New Plan</Button>
+            </div>
+          }
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -235,7 +297,9 @@ export default function MaintenancePage() {
                   try {
                     const formData = new FormData();
                     formData.append('file', file);
-                    const res = await axios.post('/api/upload', formData);
+                    const res = await axios.post('/api/upload', formData, {
+                      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                    });
                     const url = res.data.links?.[0];
                     if (url) {
                       setForm(prev => ({ ...prev, documents: [...(prev.documents || []), { name: file.name, url }] }));
