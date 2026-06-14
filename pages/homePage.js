@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import Loader, { DashboardSkeleton } from "@/components/Loader";
 import { StatCard } from "@/components/ui/SharedComponents";
@@ -24,8 +24,55 @@ export default function HomePage() {
   const [user, setUser] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
   const [projects, setProjects] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetchWithAuth("/api/projects");
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true);
+    setDashboardError("");
+
+    // First-load hardening: retry once if the initial request fails
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetchWithAuth("/api/dashboard");
+        if (res.ok) {
+          const data = await res.json();
+          setDashboard(data);
+          setLoading(false);
+          return;
+        }
+
+        if (attempt === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          continue;
+        }
+
+        setDashboardError("Unable to load dashboard data. Please retry.");
+      } catch (err) {
+        console.error(err);
+        if (attempt === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          continue;
+        }
+        setDashboardError("Unable to load dashboard data. Please retry.");
+      }
+    }
+
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -40,30 +87,7 @@ export default function HomePage() {
 
     fetchDashboard();
     fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      const res = await fetchWithAuth("/api/projects");
-      if (res.ok) {
-        const data = await res.json();
-        setProjects(Array.isArray(data) ? data : []);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchDashboard = async () => {
-    try {
-      const res = await fetchWithAuth("/api/dashboard");
-      if (res.ok) {
-        const data = await res.json();
-        setDashboard(data);
-      }
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
+  }, [fetchDashboard]);
 
   const s = dashboard?.summary || {};
 
@@ -80,6 +104,19 @@ export default function HomePage() {
     <Layout>
       {loading ? (
         <DashboardSkeleton />
+      ) : dashboardError ? (
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white border border-red-200 rounded-md p-6 mb-6">
+            <h2 className="text-base font-semibold text-red-700">Dashboard Load Failed</h2>
+            <p className="text-sm text-red-600 mt-1">{dashboardError}</p>
+            <button
+              onClick={fetchDashboard}
+              className="mt-4 px-4 py-2 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       ) : (
       <div className="max-w-7xl mx-auto">
         {/* Header */}
