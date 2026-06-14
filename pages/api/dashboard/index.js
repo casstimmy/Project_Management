@@ -1,4 +1,5 @@
 import { mongooseConnect } from "@/lib/mongoose";
+import mongoose from "mongoose";
 import Asset from "@/models/Asset";
 import WorkOrder from "@/models/WorkOrder";
 import Incident from "@/models/Incident";
@@ -39,7 +40,12 @@ export default async function handler(req, res) {
     return res.json(dashboardCache.data);
   }
 
+  // Ensure DB is fully connected before running aggregations
   await mongooseConnect();
+  // Wait for connection to be in ready state (handles cold-start timing)
+  if (mongoose.connection.readyState !== 1) {
+    await mongoose.connection.asPromise();
+  }
 
   try {
     const currentDate = new Date();

@@ -28,9 +28,9 @@ export default function HomePage() {
   const [projects, setProjects] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
-      const res = await fetchWithAuth("/api/projects");
+      const res = await fetchWithAuth("/api/projects", { noStore: true });
       if (res.ok) {
         const data = await res.json();
         setProjects(Array.isArray(data) ? data : []);
@@ -38,39 +38,46 @@ export default function HomePage() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, []);
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     setDashboardError("");
 
-    // First-load hardening: retry once if the initial request fails
-    for (let attempt = 0; attempt < 2; attempt++) {
+    // Retry up to 3 times with increasing backoff to handle cold-start latency
+    const MAX_RETRIES = 3;
+    const BACKOFF = [0, 800, 1500];
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, BACKOFF[attempt] || 1500));
+      }
+
       try {
         const res = await fetchWithAuth(`/api/dashboard?fresh=1&t=${Date.now()}`, { noStore: true });
+
         if (res.ok) {
           const data = await res.json();
-          setDashboard(data);
+          // Verify we got meaningful data — if summary is empty, the DB might not be ready
+          if (data && data.summary) {
+            setDashboard(data);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // 401 means token issue — don't retry, redirect will happen from Nav
+        if (res.status === 401) {
+          setDashboardError("Session expired. Please log in again.");
           setLoading(false);
           return;
         }
-
-        if (attempt === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          continue;
-        }
-
-        setDashboardError("Unable to load dashboard data. Please retry.");
       } catch (err) {
-        console.error(err);
-        if (attempt === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          continue;
-        }
-        setDashboardError("Unable to load dashboard data. Please retry.");
+        console.error("Dashboard fetch attempt", attempt + 1, err);
       }
     }
 
+    setDashboardError("Unable to load dashboard data. Please retry.");
     setLoading(false);
   }, []);
 
@@ -80,14 +87,16 @@ export default function HomePage() {
     else if (hour < 18) setTimeOfDay("Afternoon");
     else setTimeOfDay("Evening");
 
+    // Ensure token is available before making API calls
     const token = localStorage.getItem("token");
-    if (token) {
-      try { setUser(jwtDecode(token)); } catch {}
-    }
+    if (!token) return; // Nav will redirect to login
 
+    try { setUser(jwtDecode(token)); } catch { return; }
+
+    // Fetch dashboard and projects in parallel
     fetchDashboard();
     fetchProjects();
-  }, [fetchDashboard]);
+  }, [fetchDashboard, fetchProjects]);
 
   const s = dashboard?.summary || {};
 
