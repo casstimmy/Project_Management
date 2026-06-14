@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Layout from "@/components/MainLayout/Layout";
-import Loader, { DashboardSkeleton } from "@/components/Loader";
 import { StatCard } from "@/components/ui/SharedComponents";
 import {
   Package, Wrench, ClipboardList, AlertOctagon, ShieldCheck,
-  BanknoteArrowUp, Building2, TrendingUp, AlertTriangle, BarChart3,
-  Activity, Calendar, ArrowRight, FolderKanban, ChevronDown, ChevronUp,
+  BanknoteArrowUp, Building2, BarChart3,
+  Calendar, ArrowRight, FolderKanban, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -22,8 +21,9 @@ const CHART_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#E
 export default function HomePage() {
   const [timeOfDay, setTimeOfDay] = useState("");
   const [user, setUser] = useState(null);
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState(null);
+  const [charts, setCharts] = useState(null);
+  const [recent, setRecent] = useState(null);
   const [dashboardError, setDashboardError] = useState("");
   const [projects, setProjects] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
@@ -40,46 +40,51 @@ export default function HomePage() {
     }
   }, []);
 
-  const fetchDashboard = useCallback(async () => {
-    setLoading(true);
-    setDashboardError("");
-
-    // Retry up to 3 times with increasing backoff to handle cold-start latency
+  // Fetch a single dashboard section with retry
+  const fetchSection = useCallback(async (section, setter) => {
     const MAX_RETRIES = 3;
-    const BACKOFF = [0, 800, 1500];
+    const BACKOFF = [0, 600, 1200];
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, BACKOFF[attempt] || 1500));
+        await new Promise((r) => setTimeout(r, BACKOFF[attempt]));
       }
-
       try {
-        const res = await fetchWithAuth(`/api/dashboard?fresh=1&t=${Date.now()}`, { noStore: true });
-
+        const res = await fetchWithAuth(
+          `/api/dashboard?section=${section}&fresh=1&t=${Date.now()}`,
+          { noStore: true }
+        );
         if (res.ok) {
           const data = await res.json();
-          // Verify we got meaningful data — if summary is empty, the DB might not be ready
-          if (data && data.summary) {
-            setDashboard(data);
-            setLoading(false);
-            return;
+          if (data && Object.keys(data).length > 0) {
+            setter(data);
+            return true;
           }
         }
-
-        // 401 means token issue — don't retry, redirect will happen from Nav
-        if (res.status === 401) {
-          setDashboardError("Session expired. Please log in again.");
-          setLoading(false);
-          return;
-        }
+        if (res.status === 401) return false;
       } catch (err) {
-        console.error("Dashboard fetch attempt", attempt + 1, err);
+        console.error(`Dashboard ${section} attempt ${attempt + 1}:`, err);
       }
     }
-
-    setDashboardError("Unable to load dashboard data. Please retry.");
-    setLoading(false);
+    return false;
   }, []);
+
+  const fetchDashboard = useCallback(async () => {
+    setDashboardError("");
+
+    // Fetch summary FIRST (KPI cards appear fastest), then charts & recent in parallel
+    const summaryOk = await fetchSection("summary", setSummary);
+    if (!summaryOk && !summary) {
+      setDashboardError("Unable to load dashboard data. Please retry.");
+      return;
+    }
+
+    // Once summary is loaded (DB is warmed), fetch charts and recent in parallel
+    await Promise.all([
+      fetchSection("charts", setCharts),
+      fetchSection("recent", setRecent),
+    ]);
+  }, [fetchSection, summary]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -87,18 +92,16 @@ export default function HomePage() {
     else if (hour < 18) setTimeOfDay("Afternoon");
     else setTimeOfDay("Evening");
 
-    // Ensure token is available before making API calls
     const token = localStorage.getItem("token");
-    if (!token) return; // Nav will redirect to login
+    if (!token) return;
 
     try { setUser(jwtDecode(token)); } catch { return; }
 
-    // Fetch dashboard and projects in parallel
     fetchDashboard();
     fetchProjects();
   }, [fetchDashboard, fetchProjects]);
 
-  const s = dashboard?.summary || {};
+  const s = summary || {};
 
   const quickLinks = [
     { label: "Asset Register", href: "/assets", icon: <Package size={18} />, color: "bg-blue-50 text-blue-600" },
@@ -109,11 +112,12 @@ export default function HomePage() {
     { label: "Budgets", href: "/budgets", icon: <BanknoteArrowUp size={18} />, color: "bg-indigo-50 text-indigo-600" },
   ];
 
+  // Show skeleton only if we have nothing at all yet
+  const isInitialLoad = !summary && !dashboardError;
+
   return (
     <Layout>
-      {loading ? (
-        <DashboardSkeleton />
-      ) : dashboardError ? (
+      {dashboardError && !summary ? (
         <div className="max-w-7xl mx-auto">
           <div className="bg-white border border-red-200 rounded-md p-6 mb-6">
             <h2 className="text-base font-semibold text-red-700">Dashboard Load Failed</h2>
@@ -146,34 +150,49 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard icon={<Package size={20} />} label="Total Assets" value={s.totalAssets || 0} color="blue"
-            subtext={`${s.assetsNearReplacement || 0} near replacement`} />
-          <StatCard icon={<ClipboardList size={20} />} label="Active Work Orders" value={s.activeWorkOrders || 0} color="orange"
-            subtext={`${s.overdueWorkOrders || 0} overdue`} />
-          <StatCard icon={<AlertOctagon size={20} />} label="Open Incidents" value={s.openIncidents || 0} color="red" />
-          <StatCard icon={<ShieldCheck size={20} />} label="Compliance Score" value={`${(s.complianceScore || 0).toFixed(0)}%`}
-            color={(s.complianceScore || 0) >= 80 ? "green" : "yellow"} />
-        </div>
+        {/* KPI Cards — load first */}
+        {isInitialLoad ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white border border-gray-200 rounded-md p-5 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-24 mb-3" />
+                <div className="h-7 bg-gray-200 rounded w-16" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard icon={<Package size={20} />} label="Total Assets" value={s.totalAssets || 0} color="blue"
+                subtext={`${s.assetsNearReplacement || 0} near replacement`} />
+              <StatCard icon={<ClipboardList size={20} />} label="Active Work Orders" value={s.activeWorkOrders || 0} color="orange"
+                subtext={`${s.overdueWorkOrders || 0} overdue`} />
+              <StatCard icon={<AlertOctagon size={20} />} label="Open Incidents" value={s.openIncidents || 0} color="red" />
+              <StatCard icon={<ShieldCheck size={20} />} label="Compliance Score" value={`${(recent?.complianceScore || s.complianceScore || 0).toFixed(0)}%`}
+                color={(recent?.complianceScore || s.complianceScore || 0) >= 80 ? "green" : "yellow"} />
+            </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard icon={<Building2 size={20} />} label="Sites" value={s.totalSites || 0} color="indigo" />
-          <StatCard icon={<BarChart3 size={20} />} label="Avg FCI" value={`${((s.facilityConditionIndex || 0) * 100).toFixed(1)}%`}
-            color={(s.facilityConditionIndex || 0) <= 0.1 ? "green" : "red"} />
-          <StatCard icon={<Wrench size={20} />} label="Maintenance Due" value={s.maintenanceDue || 0} color="purple" />
-          <StatCard icon={<BanknoteArrowUp size={20} />} label="Budget Variance" value={formatCurrency(s.budgetVariance || 0)}
-            color={(s.budgetVariance || 0) >= 0 ? "green" : "red"} subtext={(s.budgetVariance || 0) >= 0 ? "Under budget" : "Over budget"} />
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard icon={<Building2 size={20} />} label="Sites" value={s.totalSites || 0} color="indigo" />
+              <StatCard icon={<BarChart3 size={20} />} label="Avg FCI" value={`${((recent?.facilityConditionIndex || s.facilityConditionIndex || 0) * 100).toFixed(1)}%`}
+                color={(recent?.facilityConditionIndex || s.facilityConditionIndex || 0) <= 0.1 ? "green" : "red"} />
+              <StatCard icon={<Wrench size={20} />} label="Maintenance Due" value={s.maintenanceDue || 0} color="purple" />
+              <StatCard icon={<BanknoteArrowUp size={20} />} label="Budget Variance" value={formatCurrency(recent?.budgetVariance || s.budgetVariance || 0)}
+                color={(recent?.budgetVariance || s.budgetVariance || 0) >= 0 ? "green" : "red"} subtext={(recent?.budgetVariance || s.budgetVariance || 0) >= 0 ? "Under budget" : "Over budget"} />
+            </div>
+          </>
+        )}
 
-        {/* Charts Row */}
+        {/* Charts Row — loads after summary */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Work Orders by Status */}
           <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Work Orders by Status</h3>
-            {dashboard?.charts?.workOrdersByStatus?.length > 0 ? (
+            {!charts ? (
+              <div className="h-[250px] flex items-center justify-center"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : charts.workOrdersByStatus?.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={dashboard.charts.workOrdersByStatus}>
+                <BarChart data={charts.workOrdersByStatus}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="_id" tick={{ fontSize: 12 }} />
                   <YAxis />
@@ -189,11 +208,13 @@ export default function HomePage() {
           {/* Assets by Category */}
           <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Assets by Category</h3>
-            {dashboard?.charts?.assetsByCategory?.length > 0 ? (
+            {!charts ? (
+              <div className="h-[250px] flex items-center justify-center"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : charts.assetsByCategory?.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={dashboard.charts.assetsByCategory} dataKey="count" nameKey="_id" cx="50%" cy="50%" outerRadius={90} label={({ _id, count }) => `${_id}: ${count}`}>
-                    {dashboard.charts.assetsByCategory.map((_, i) => (
+                  <Pie data={charts.assetsByCategory} dataKey="count" nameKey="_id" cx="50%" cy="50%" outerRadius={90} label={({ _id, count }) => `${_id}: ${count}`}>
+                    {charts.assetsByCategory.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
                   </Pie>
@@ -211,15 +232,17 @@ export default function HomePage() {
           {/* Work Orders by Priority */}
           <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Work Orders by Priority</h3>
-            {dashboard?.charts?.workOrdersByPriority?.length > 0 ? (
+            {!charts ? (
+              <div className="h-[220px] flex items-center justify-center"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : charts.workOrdersByPriority?.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={dashboard.charts.workOrdersByPriority} layout="vertical">
+                <BarChart data={charts.workOrdersByPriority} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis type="number" />
                   <YAxis dataKey="_id" type="category" tick={{ fontSize: 12 }} width={80} />
                   <Tooltip />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                    {dashboard.charts.workOrdersByPriority.map((entry, i) => {
+                    {charts.workOrdersByPriority.map((entry, i) => {
                       const colorMap = { low: "#10B981", medium: "#F59E0B", high: "#F97316", critical: "#EF4444" };
                       return <Cell key={i} fill={colorMap[entry._id] || "#3B82F6"} />;
                     })}
@@ -234,9 +257,11 @@ export default function HomePage() {
           {/* Incidents by Type */}
           <div className="bg-white rounded-md border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Incidents by Type</h3>
-            {dashboard?.charts?.incidentsByType?.length > 0 ? (
+            {!charts ? (
+              <div className="h-[220px] flex items-center justify-center"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : charts.incidentsByType?.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={dashboard.charts.incidentsByType}>
+                <BarChart data={charts.incidentsByType}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="_id" tick={{ fontSize: 11 }} />
                   <YAxis />
@@ -341,9 +366,11 @@ export default function HomePage() {
                 View all <ArrowRight size={12} />
               </Link>
             </div>
-            {dashboard?.recent?.fcaAssessments?.length > 0 ? (
+            {!recent ? (
+              <div className="flex items-center justify-center py-6"><div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : recent.fcaAssessments?.length > 0 ? (
               <div className="space-y-3">
-                {dashboard.recent.fcaAssessments.map((item) => (
+                {recent.fcaAssessments.map((item) => (
                   <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-md px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{item.building?.name || "—"}</p>
@@ -363,7 +390,6 @@ export default function HomePage() {
           </div>
 
           {/* Recent Budgets */}
-          {/* Recent Budgets */}
           <div className="bg-white rounded-md border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-700">Recent Budgets</h3>
@@ -371,9 +397,11 @@ export default function HomePage() {
                 View all <ArrowRight size={12} />
               </Link>
             </div>
-            {dashboard?.recent?.budgets?.length > 0 ? (
+            {!recent ? (
+              <div className="flex items-center justify-center py-6"><div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : recent.budgets?.length > 0 ? (
               <div className="space-y-3">
-                {dashboard.recent.budgets.map((item) => (
+                {recent.budgets.map((item) => (
                   <div key={item._id} className="flex items-center justify-between bg-gray-50 rounded-md px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{item.title}</p>
