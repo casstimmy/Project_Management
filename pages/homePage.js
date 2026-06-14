@@ -47,7 +47,7 @@ export default function HomePage() {
     // First-load hardening: retry once if the initial request fails
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const res = await fetchWithAuth("/api/dashboard");
+        const res = await fetchWithAuth(`/api/dashboard?fresh=1&t=${Date.now()}`, { noStore: true });
         if (res.ok) {
           const data = await res.json();
           setDashboard(data);

@@ -19,14 +19,22 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Dashboard should always reflect current operations state.
+  // Keep responses out of browser/proxy caches.
+  res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+
   if (!(await authenticate(req, res))) return;
 
   // Apply rate limiting (60 requests per minute per IP)
   if (!applyRateLimit(req, res, apiLimiter, 60)) return;
 
-  // Return cached data if still fresh
+  const forceFresh = req.query?.fresh === "1" || req.query?.fresh === "true";
+
+  // Return cached data if still fresh (unless caller requested force-fresh)
   const now = Date.now();
-  if (dashboardCache.data && now - dashboardCache.timestamp < CACHE_TTL) {
+  if (!forceFresh && dashboardCache.data && now - dashboardCache.timestamp < CACHE_TTL) {
     res.setHeader("X-Cache", "HIT");
     return res.json(dashboardCache.data);
   }
