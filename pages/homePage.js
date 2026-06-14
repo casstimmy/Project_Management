@@ -73,7 +73,7 @@ export default function HomePage() {
     { label: "Maintenance", href: "/maintenance", icon: <Wrench size={18} />, color: "bg-purple-50 text-purple-600" },
     { label: "HSSE Audit", href: "/hsse", icon: <ShieldCheck size={18} />, color: "bg-emerald-50 text-emerald-600" },
     { label: "Incidents", href: "/incidents", icon: <AlertOctagon size={18} />, color: "bg-red-50 text-red-600" },
-    { label: "Budgets", href: "/budgets", icon: <DollarSign size={18} />, color: "bg-indigo-50 text-indigo-600" },
+    { label: "Budgets", href: "/budgets", icon: <BanknoteArrowUp size={18} />, color: "bg-indigo-50 text-indigo-600" },
   ];
 
   return (
