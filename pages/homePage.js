@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import { StatCard } from "@/components/ui/SharedComponents";
 import {
@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import {
   BarChart, Bar, PieChart, Pie, Cell,
-  CartesianGrid, XAxis, YAxis, Tooltip, Legend,
+  CartesianGrid, XAxis, YAxis, Tooltip,
   ResponsiveContainer,
 } from "recharts";
 import { jwtDecode } from "jwt-decode";
@@ -28,6 +28,9 @@ export default function HomePage() {
   const [projects, setProjects] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
 
+  // Prevent double-fetching from StrictMode or effect re-runs
+  const hasFetched = useRef(false);
+
   const fetchProjects = useCallback(async () => {
     try {
       const res = await fetchWithAuth("/api/projects", { noStore: true });
@@ -41,9 +44,9 @@ export default function HomePage() {
   }, []);
 
   // Fetch a single dashboard section with retry
-  const fetchSection = useCallback(async (section, setter) => {
-    const MAX_RETRIES = 3;
-    const BACKOFF = [0, 600, 1200];
+  const fetchSection = useCallback(async (section) => {
+    const MAX_RETRIES = 4;
+    const BACKOFF = [0, 800, 1500, 2500];
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -57,34 +60,37 @@ export default function HomePage() {
         if (res.ok) {
           const data = await res.json();
           if (data && Object.keys(data).length > 0) {
-            setter(data);
-            return true;
+            return data;
           }
         }
-        if (res.status === 401) return false;
+        if (res.status === 401) return null;
       } catch (err) {
         console.error(`Dashboard ${section} attempt ${attempt + 1}:`, err);
       }
     }
-    return false;
+    return null;
   }, []);
 
   const fetchDashboard = useCallback(async () => {
     setDashboardError("");
 
-    // Fetch summary FIRST (KPI cards appear fastest), then charts & recent in parallel
-    const summaryOk = await fetchSection("summary", setSummary);
-    if (!summaryOk && !summary) {
+    // Step 1: Fetch summary first — this warms up the DB connection
+    const summaryData = await fetchSection("summary");
+    if (!summaryData) {
       setDashboardError("Unable to load dashboard data. Please retry.");
       return;
     }
+    setSummary(summaryData);
 
-    // Once summary is loaded (DB is warmed), fetch charts and recent in parallel
-    await Promise.all([
-      fetchSection("charts", setCharts),
-      fetchSection("recent", setRecent),
+    // Step 2: DB is warm — fetch charts and recent in parallel
+    const [chartsData, recentData] = await Promise.all([
+      fetchSection("charts"),
+      fetchSection("recent"),
     ]);
-  }, [fetchSection, summary]);
+
+    if (chartsData) setCharts(chartsData);
+    if (recentData) setRecent(recentData);
+  }, [fetchSection]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -96,6 +102,10 @@ export default function HomePage() {
     if (!token) return;
 
     try { setUser(jwtDecode(token)); } catch { return; }
+
+    // Only fetch once per mount
+    if (hasFetched.current) return;
+    hasFetched.current = true;
 
     fetchDashboard();
     fetchProjects();
