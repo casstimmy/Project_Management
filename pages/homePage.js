@@ -4,7 +4,7 @@ import Loader, { DashboardSkeleton } from "@/components/Loader";
 import { StatCard } from "@/components/ui/SharedComponents";
 import {
   Package, Wrench, ClipboardList, AlertOctagon, ShieldCheck,
-  DollarSign, Building2, TrendingUp, AlertTriangle, BarChart3,
+  BanknoteArrowUp, Building2, TrendingUp, AlertTriangle, BarChart3,
   Activity, Calendar, ArrowRight, FolderKanban, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
@@ -116,7 +116,7 @@ export default function HomePage() {
           <StatCard icon={<BarChart3 size={20} />} label="Avg FCI" value={`${((s.facilityConditionIndex || 0) * 100).toFixed(1)}%`}
             color={(s.facilityConditionIndex || 0) <= 0.1 ? "green" : "red"} />
           <StatCard icon={<Wrench size={20} />} label="Maintenance Due" value={s.maintenanceDue || 0} color="purple" />
-          <StatCard icon={<DollarSign size={20} />} label="Budget Variance" value={formatCurrency(s.budgetVariance || 0)}
+          <StatCard icon={<BanknoteArrowUp size={20} />} label="Budget Variance" value={formatCurrency(s.budgetVariance || 0)}
             color={(s.budgetVariance || 0) >= 0 ? "green" : "red"} subtext={(s.budgetVariance || 0) >= 0 ? "Under budget" : "Over budget"} />
         </div>
 
