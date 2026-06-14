@@ -11,16 +11,22 @@ export default async function handler(req, res) {
     if (!user) return;
 
     if (method === "GET") {
-      const { unreadOnly } = req.query;
+      const { unreadOnly, page = 1, limit = 20 } = req.query;
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const filter = { userId: user.id };
       if (unreadOnly === "true") filter.read = false;
 
-      const notifications = await Notification.find(filter)
-        .sort({ createdAt: -1 })
-        .limit(50);
+      const [notifications, total, unreadCount] = await Promise.all([
+        Notification.find(filter)
+          .sort({ createdAt: -1 })
+          .skip((pageNum - 1) * limitNum)
+          .limit(limitNum),
+        Notification.countDocuments(filter),
+        Notification.countDocuments({ userId: user.id, read: false }),
+      ]);
 
-      const unreadCount = await Notification.countDocuments({ userId: user.id, read: false });
-      return res.json({ notifications, unreadCount });
+      return res.json({ notifications, unreadCount, total, page: pageNum, pages: Math.ceil(total / limitNum) });
     }
 
     if (method === "PUT") {
@@ -32,11 +38,30 @@ export default async function handler(req, res) {
       }
 
       if (notificationId) {
-        await Notification.findByIdAndUpdate(notificationId, { read: true, readAt: new Date() });
+        await Notification.findOneAndUpdate(
+          { _id: notificationId, userId: user.id },
+          { read: true, readAt: new Date() }
+        );
         return res.json({ success: true });
       }
 
       return res.status(400).json({ error: "notificationId or markAll is required" });
+    }
+
+    if (method === "DELETE") {
+      const { notificationId, clearRead } = req.body || {};
+
+      if (clearRead) {
+        const result = await Notification.deleteMany({ userId: user.id, read: true });
+        return res.json({ success: true, deleted: result.deletedCount || 0 });
+      }
+
+      if (notificationId) {
+        await Notification.deleteOne({ _id: notificationId, userId: user.id });
+        return res.json({ success: true });
+      }
+
+      return res.status(400).json({ error: "notificationId or clearRead is required" });
     }
 
     return res.status(405).json({ error: `Method ${method} not allowed` });

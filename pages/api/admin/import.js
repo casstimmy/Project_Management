@@ -3,7 +3,7 @@
  *
  *   POST /api/admin/import   body: { entity: "sites" | "buildings" | ... , rows: [ {...}, ... ] }
  *
- * Admin-only. Inserts real client records (not demo data) row by row, using
+ * Admin-only. Inserts client records row by row, using
  * Model.create() so schema pre-save hooks (asset tags, depreciation, etc.) run.
  * Returns a per-row result so the UI can report exactly which rows succeeded
  * and which failed and why.

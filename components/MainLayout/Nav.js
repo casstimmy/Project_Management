@@ -1,14 +1,14 @@
 // components/MainLayout/Nav.js
-import { FaBell, FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
+import { FaBell, FaBars, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { checkAuth } from "@/lib/checkAuth";
 import Sidebar from "./SideBar";
 import Link from "next/link";
 import { ROLE_LABELS } from "@/lib/constants";
 import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Inbox, BellRing } from "lucide-react";
+import fetchWithAuth from "@/lib/fetchWithAuth";
 
 export default function Nav({ children }) {
   const router = useRouter();
@@ -17,8 +17,10 @@ export default function Nav({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifLoading, setNotifLoading] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const notifRef = useRef(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -42,6 +44,87 @@ export default function Nav({ children }) {
 
     return () => clearInterval(interval);
   }, [router]);
+
+  const fetchNotifications = useCallback(async ({ unreadOnly = false, limit = 8 } = {}) => {
+    if (!user) return;
+    setNotifLoading(true);
+    try {
+      const qs = new URLSearchParams({ limit: String(limit) });
+      if (unreadOnly) qs.set("unreadOnly", "true");
+      const res = await fetchWithAuth(`/api/notifications?${qs.toString()}`);
+      const data = await res.json();
+      if (!res.ok) return;
+      setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch (err) {
+      console.error("Notification fetch error:", err);
+    } finally {
+      setNotifLoading(false);
+    }
+  }, [user]);
+
+  const markNotificationRead = async (notificationId) => {
+    try {
+      await fetchWithAuth("/api/notifications", {
+        method: "PUT",
+        body: JSON.stringify({ notificationId }),
+      });
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notificationId ? { ...n, read: true, readAt: new Date().toISOString() } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("markNotificationRead error:", err);
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await fetchWithAuth("/api/notifications", {
+        method: "PUT",
+        body: JSON.stringify({ markAll: true }),
+      });
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true, readAt: new Date().toISOString() })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("markAllRead error:", err);
+    }
+  };
+
+  const openNotification = async (n) => {
+    if (!n.read) await markNotificationRead(n._id);
+    setShowNotifications(false);
+    router.push(n.link || "/inbox");
+  };
+
+  const formatWhen = (isoDate) => {
+    if (!isoDate) return "now";
+    const ms = Date.now() - new Date(isoDate).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(isoDate).toLocaleDateString();
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchNotifications();
+    const poller = setInterval(() => fetchNotifications(), 30_000);
+    return () => clearInterval(poller);
+  }, [user, fetchNotifications]);
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (!notifRef.current) return;
+      if (!notifRef.current.contains(e.target)) setShowNotifications(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -95,9 +178,13 @@ export default function Nav({ children }) {
           )}
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative" ref={notifRef}>
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => {
+                const next = !showNotifications;
+                setShowNotifications(next);
+                if (next) fetchNotifications();
+              }}
               className="relative p-2 rounded-lg hover:bg-gray-100 transition"
             >
               <FaBell className="text-lg text-gray-500" />
@@ -107,6 +194,63 @@ export default function Nav({ children }) {
                 </span>
               )}
             </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BellRing size={16} className="text-gray-500" />
+                    <h3 className="text-sm font-semibold text-gray-800">Notifications</h3>
+                    <span className="text-xs text-gray-500">{unreadCount} unread</span>
+                  </div>
+                  <button
+                    onClick={markAllRead}
+                    disabled={unreadCount === 0}
+                    className="text-xs text-blue-600 hover:text-blue-700 disabled:text-gray-300"
+                  >
+                    Mark all read
+                  </button>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto">
+                  {notifLoading ? (
+                    <div className="px-4 py-8 text-sm text-gray-400 text-center">Loading notifications...</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="px-4 py-10 text-center text-gray-400">
+                      <Inbox size={20} className="mx-auto mb-2" />
+                      <p className="text-sm">No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <button
+                        key={n._id}
+                        onClick={() => openNotification(n)}
+                        className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition ${n.read ? "" : "bg-blue-50/30"}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-sm ${n.read ? "text-gray-700" : "text-gray-900 font-medium"}`}>{n.title}</p>
+                          {!n.read && <span className="mt-1 w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{n.message}</p>
+                        <div className="mt-1 text-[11px] text-gray-400">{formatWhen(n.createdAt)}</div>
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                  <Link href="/inbox" className="text-xs text-blue-600 hover:text-blue-700" onClick={() => setShowNotifications(false)}>
+                    View all notifications
+                  </Link>
+                  <button
+                    onClick={() => fetchNotifications()}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* User */}

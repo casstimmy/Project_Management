@@ -5,9 +5,11 @@ import Building from "@/models/Building";
 import Project from "@/models/Project";
 import { sendApiError } from "@/lib/apiErrors";
 import { authenticate } from "@/lib/auth";
+import { notifyAdmins } from "@/lib/notificationService";
 
 export default async function handler(req, res) {
-  if (!(await authenticate(req, res))) return;
+  const user = await authenticate(req, res);
+  if (!user) return;
 
   await mongooseConnect();
   const { method } = req;
@@ -53,6 +55,20 @@ export default async function handler(req, res) {
 
       const budget = new Budget(data);
       await budget.save();
+
+      await notifyAdmins(
+        {
+          title: "Budget Created",
+          message: `${budget.title} (${budget.budgetType}) for FY ${budget.fiscalYear} created.`,
+          type: "budget-alert",
+          priority: "medium",
+          link: `/budgets?highlight=${budget._id}`,
+          module: "budgets",
+          entityId: budget._id,
+        },
+        { excludeUserId: user.id }
+      );
+
       return res.status(201).json(budget);
     }
 
@@ -65,9 +81,26 @@ export default async function handler(req, res) {
 
       const budget = await Budget.findById(_id);
       if (!budget) return res.status(404).json({ error: "Budget not found" });
+      const prevStatus = budget.status;
 
       Object.assign(budget, data);
       await budget.save();
+
+      if (data.status && data.status !== prevStatus) {
+        await notifyAdmins(
+          {
+            title: "Budget Status Updated",
+            message: `${budget.title}: ${prevStatus || "draft"} -> ${budget.status}`,
+            type: "budget-alert",
+            priority: budget.status === "rejected" ? "high" : "medium",
+            link: `/budgets?highlight=${budget._id}`,
+            module: "budgets",
+            entityId: budget._id,
+          },
+          { excludeUserId: user.id }
+        );
+      }
+
       return res.json(budget);
     }
 

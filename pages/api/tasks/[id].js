@@ -3,9 +3,11 @@ import { mongooseConnect } from "@/lib/mongoose";
 import Task from "@/models/Task";
 import Project from "@/models/Project";
 import { authenticate } from "@/lib/auth";
+import { notifyAdmins, notifyUserByEmail } from "@/lib/notificationService";
 
 export default async function handler(req, res) {
-  if (!(await authenticate(req, res))) return;
+  const user = await authenticate(req, res);
+  if (!user) return;
 
   await mongooseConnect();
   const { id } = req.query; // this is the task ID
@@ -23,11 +25,42 @@ export default async function handler(req, res) {
 
   if (req.method === "PUT") {
     try {
+      const previous = await Task.findById(id);
       const updated = await Task.findByIdAndUpdate(id, req.body, {
         new: true,
         runValidators: true,
       });
       if (!updated) return res.status(404).json({ error: "Task not found" });
+
+      if (previous && req.body.status && req.body.status !== previous.status) {
+        await notifyAdmins(
+          {
+            title: "Task Status Updated",
+            message: `${updated.name}: ${previous.status || "todo"} -> ${updated.status}`,
+            type: "system",
+            priority: updated.priority || "medium",
+            link: updated.projectId ? `/projects/${updated.projectId}` : "/myTask/assigned",
+            module: "tasks",
+            entityId: updated._id,
+          },
+          { excludeUserId: user.id }
+        );
+      }
+
+      const prevEmail = previous?.assignee?.email || "";
+      const nextEmail = updated?.assignee?.email || "";
+      if (nextEmail && nextEmail !== prevEmail) {
+        await notifyUserByEmail(nextEmail, {
+          title: "Task Assigned",
+          message: `You were assigned task: ${updated.name}`,
+          type: "system",
+          priority: updated.priority || "medium",
+          link: updated.projectId ? `/projects/${updated.projectId}` : "/myTask/assigned",
+          module: "tasks",
+          entityId: updated._id,
+        });
+      }
+
       return res.json(updated);
     } catch (err) {
       console.error("PUT /api/tasks/[id] error:", err);

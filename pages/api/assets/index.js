@@ -5,6 +5,7 @@ import Building from "@/models/Building";
 import FacilitySpace from "@/models/FacilitySpace";
 import { sendApiError } from "@/lib/apiErrors";
 import { authenticate } from "@/lib/auth";
+import { notifyAdmins } from "@/lib/notificationService";
 
 function normalizeAssetPayload(payload = {}) {
   const data = { ...payload };
@@ -25,7 +26,8 @@ function normalizeAssetPayload(payload = {}) {
 }
 
 export default async function handler(req, res) {
-  if (!(await authenticate(req, res))) return;
+  const user = await authenticate(req, res);
+  if (!user) return;
 
   await mongooseConnect();
   const { method } = req;
@@ -82,8 +84,22 @@ export default async function handler(req, res) {
       const data = normalizeAssetPayload(req.body);
       if (!data.name) return res.status(400).json({ error: "Asset name is required" });
 
-      const asset = new Asset(data);
+      const asset = new Asset({ ...data, createdBy: data.createdBy || user.id });
       await asset.save();
+
+      await notifyAdmins(
+        {
+          title: "Asset Added",
+          message: `${asset.name} (${asset.assetTag || "pending tag"}) added to register.`,
+          type: "asset-alert",
+          priority: "low",
+          link: `/assets?highlight=${asset._id}`,
+          module: "assets",
+          entityId: asset._id,
+        },
+        { excludeUserId: user.id }
+      );
+
       return res.status(201).json(asset);
     }
 
@@ -91,8 +107,25 @@ export default async function handler(req, res) {
       const { _id, ...data } = req.body;
       if (!_id) return res.status(400).json({ error: "Asset ID is required" });
 
+      const existing = await Asset.findById(_id);
       const updated = await Asset.findByIdAndUpdate(_id, normalizeAssetPayload(data), { new: true, runValidators: true });
       if (!updated) return res.status(404).json({ error: "Asset not found" });
+
+      if (existing && data.status && data.status !== existing.status) {
+        await notifyAdmins(
+          {
+            title: "Asset Status Updated",
+            message: `${updated.name}: ${existing.status || "-"} -> ${updated.status}`,
+            type: "asset-alert",
+            priority: updated.status === "out-of-service" ? "high" : "medium",
+            link: `/assets?highlight=${updated._id}`,
+            module: "assets",
+            entityId: updated._id,
+          },
+          { excludeUserId: user.id }
+        );
+      }
+
       return res.json(updated);
     }
 

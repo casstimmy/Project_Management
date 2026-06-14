@@ -5,9 +5,11 @@ import Site from "@/models/Site";
 import Building from "@/models/Building";
 import { sendApiError } from "@/lib/apiErrors";
 import { authenticate } from "@/lib/auth";
+import { notifyAdmins, notifyUser } from "@/lib/notificationService";
 
 export default async function handler(req, res) {
-  if (!(await authenticate(req, res))) return;
+  const user = await authenticate(req, res);
+  if (!user) return;
 
   await mongooseConnect();
   const { method } = req;
@@ -48,7 +50,33 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Title, asset, and maintenance type are required" });
       }
 
-      const plan = await MaintenancePlan.create(data);
+      const plan = await MaintenancePlan.create({ ...data, createdBy: data.createdBy || user.id });
+
+      await notifyAdmins(
+        {
+          title: "Maintenance Plan Created",
+          message: `${plan.title} (${plan.maintenanceType}) added${plan.nextDueDate ? `, next due ${new Date(plan.nextDueDate).toLocaleDateString()}` : ""}.`,
+          type: "maintenance-due",
+          priority: plan.priority || "medium",
+          link: `/maintenance?highlight=${plan._id}`,
+          module: "maintenance",
+          entityId: plan._id,
+        },
+        { excludeUserId: user.id }
+      );
+
+      if (plan.assignedToId) {
+        await notifyUser(plan.assignedToId, {
+          title: "Maintenance Plan Assigned",
+          message: `You were assigned maintenance plan: ${plan.title}`,
+          type: "maintenance-due",
+          priority: plan.priority || "medium",
+          link: `/maintenance?highlight=${plan._id}`,
+          module: "maintenance",
+          entityId: plan._id,
+        });
+      }
+
       return res.status(201).json(plan);
     }
 
@@ -56,8 +84,37 @@ export default async function handler(req, res) {
       const { _id, ...data } = req.body;
       if (!_id) return res.status(400).json({ error: "Plan ID is required" });
 
+      const existing = await MaintenancePlan.findById(_id);
       const updated = await MaintenancePlan.findByIdAndUpdate(_id, data, { new: true });
       if (!updated) return res.status(404).json({ error: "Plan not found" });
+
+      if (existing && data.status && data.status !== existing.status) {
+        await notifyAdmins(
+          {
+            title: "Maintenance Status Updated",
+            message: `${updated.title} moved ${existing.status || "-"} -> ${updated.status}`,
+            type: "maintenance-due",
+            priority: updated.priority || "medium",
+            link: `/maintenance?highlight=${updated._id}`,
+            module: "maintenance",
+            entityId: updated._id,
+          },
+          { excludeUserId: user.id }
+        );
+      }
+
+      if (updated.assignedToId && (!existing?.assignedToId || String(updated.assignedToId) !== String(existing.assignedToId))) {
+        await notifyUser(updated.assignedToId, {
+          title: "Maintenance Plan Assigned",
+          message: `You were assigned maintenance plan: ${updated.title}`,
+          type: "maintenance-due",
+          priority: updated.priority || "medium",
+          link: `/maintenance?highlight=${updated._id}`,
+          module: "maintenance",
+          entityId: updated._id,
+        });
+      }
+
       return res.json(updated);
     }
 

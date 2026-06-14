@@ -6,7 +6,7 @@ import {
   ShieldCheck, AlertTriangle, Wrench, CalendarClock,
   DollarSign, FileText, Users, ChevronDown,
   ChevronRight, MapPin, Layers, Bell, Gauge,
-  FolderKanban, Settings, ListChecks, CalendarDays, Map, Database, Upload,
+  FolderKanban, Settings, ListChecks, CalendarDays, Map, Upload,
 } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 
@@ -77,7 +77,6 @@ const allSections = [
       { href: "/manage/team", label: "Team Management", icon: Users },
       { href: "/admin/governance", label: "Contracts & Governance", icon: ShieldCheck },
       { href: "/admin/import", label: "Client Data Import", icon: Upload },
-      { href: "/admin/seed", label: "Demo Data", icon: Database },
       { href: "/reports", label: "Reports", icon: FileText },
     ],
   },

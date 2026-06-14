@@ -2,6 +2,7 @@ import { mongooseConnect } from "@/lib/mongoose";
 import Task from "@/models/Task";
 import Project from "@/models/Project";
 import { authenticate } from "@/lib/auth";
+import { notifyUserByEmail, notifyAdmins } from "@/lib/notificationService";
 
 export default async function handler(req, res) {
   const user = await authenticate(req, res);
@@ -29,6 +30,29 @@ export default async function handler(req, res) {
       if (projectId) {
         await Project.findByIdAndUpdate(projectId, { $push: { tasks: task._id } });
       }
+
+      await notifyUserByEmail(assigneeEmail, {
+        title: "Task Assigned",
+        message: `You were assigned task: ${task.name}`,
+        type: "system",
+        priority: priority || "medium",
+        link: projectId ? `/projects/${projectId}` : "/myTask/assigned",
+        module: "tasks",
+        entityId: task._id,
+      });
+
+      await notifyAdmins(
+        {
+          title: "Task Assigned",
+          message: `${task.name} assigned to ${assigneeName || assigneeEmail}`,
+          type: "system",
+          priority: "low",
+          link: projectId ? `/projects/${projectId}` : "/myTask/assigned",
+          module: "tasks",
+          entityId: task._id,
+        },
+        { excludeUserId: user.id }
+      );
 
       return res.status(201).json(task);
     } catch (err) {

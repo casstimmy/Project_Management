@@ -2,9 +2,11 @@ import { mongooseConnect } from "@/lib/mongoose";
 import Task from "@/models/Task";
 import Project from "@/models/Project";
 import { authenticate } from "@/lib/auth";
+import { notifyAdmins, notifyUserByEmail } from "@/lib/notificationService";
 
 export default async function handler(req, res) {
-  if (!(await authenticate(req, res))) return;
+  const user = await authenticate(req, res);
+  if (!user) return;
 
   await mongooseConnect();
   const { method } = req;
@@ -41,6 +43,36 @@ export default async function handler(req, res) {
 
       // 2️⃣ Push task to project.tasks
       await Project.findByIdAndUpdate(projectId, { $push: { tasks: newTask._id } });
+
+      const assigneeEmail =
+        typeof assignee === "string"
+          ? assignee
+          : assignee?.email || "";
+
+      if (assigneeEmail) {
+        await notifyUserByEmail(assigneeEmail, {
+          title: "Task Assigned",
+          message: `You were assigned task: ${newTask.name}`,
+          type: "system",
+          priority: newTask.priority || "medium",
+          link: projectId ? `/projects/${projectId}` : "/myTask/assigned",
+          module: "tasks",
+          entityId: newTask._id,
+        });
+      }
+
+      await notifyAdmins(
+        {
+          title: "New Task Created",
+          message: `${newTask.name}${assigneeEmail ? ` assigned to ${assigneeEmail}` : ""}`,
+          type: "system",
+          priority: "low",
+          link: projectId ? `/projects/${projectId}` : "/myTask/assigned",
+          module: "tasks",
+          entityId: newTask._id,
+        },
+        { excludeUserId: user.id }
+      );
 
       return res.status(201).json(newTask);
     } catch (err) {
