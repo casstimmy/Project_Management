@@ -14,6 +14,7 @@ import {
 import { jwtDecode } from "jwt-decode";
 import { formatCurrency } from "@/lib/currency";
 import fetchWithAuth from "@/lib/fetchWithAuth";
+import { getPreloaded } from "@/lib/preload";
 import Link from "next/link";
 
 const CHART_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"];
@@ -43,8 +44,14 @@ export default function HomePage() {
     }
   }, []);
 
-  // Fetch a single dashboard section with retry
+  // Fetch a single dashboard section with retry — checks preload cache first
   const fetchSection = useCallback(async (section) => {
+    // Check if preload already has this data
+    const preloaded = getPreloaded(`/api/dashboard?section=${section}&fresh=1`);
+    if (preloaded && Object.keys(preloaded).length > 0) {
+      return preloaded;
+    }
+
     const MAX_RETRIES = 4;
     const BACKOFF = [0, 800, 1500, 2500];
 

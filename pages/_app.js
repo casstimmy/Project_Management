@@ -1,9 +1,16 @@
+import { useEffect } from 'react';
 import Head from 'next/head';
 import '@/styles/globals.css'
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from 'next-themes';
+import { preloadOnMount } from '@/lib/preload';
 
 export default function App({ Component, pageProps }) {
+  // On app mount, warm the API if user is already logged in
+  useEffect(() => {
+    preloadOnMount();
+  }, []);
+
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <Head>

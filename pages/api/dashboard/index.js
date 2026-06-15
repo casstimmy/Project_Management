@@ -8,8 +8,12 @@ import FCAAssessment from "@/models/FCAAssessment";
 import MaintenancePlan from "@/models/MaintenancePlan";
 import Budget from "@/models/Budget";
 import Site from "@/models/Site";
+import Building from "@/models/Building";
 import { authenticate } from "@/lib/auth";
 import { applyRateLimit, apiLimiter } from "@/lib/rateLimit";
+
+// Ensure Building schema is registered for .populate() calls
+void Building;
 
 // Per-section caches
 let sectionCache = { summary: null, charts: null, recent: null };

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { Building2, FolderKanban, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
+import { preloadAfterLogin } from "@/lib/preload";
 
 function LoginForm() {
   const router = useRouter();
@@ -46,6 +47,7 @@ function LoginForm() {
       // Admin goes straight through — sees everything
       if (decoded.role === "admin") {
         persistSession(data.token, "admin");
+        preloadAfterLogin();
         router.push("/homePage");
       } else {
         // Non-admin must choose their workspace
@@ -61,6 +63,7 @@ function LoginForm() {
 
   function selectMode(mode) {
     persistSession(pendingToken, mode);
+    preloadAfterLogin();
     router.push("/homePage");
   }
 
