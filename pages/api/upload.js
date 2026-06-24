@@ -47,6 +47,7 @@ export default async function ImageHandler(req, res) {
             Bucket: S3BucketName,
             Key: imageFileName,
             Body: fileBody,
+            ACL: "public-read",
             ContentType: mime.lookup(file.path) || "application/octet-stream",
           })
         );
