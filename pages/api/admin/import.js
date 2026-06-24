@@ -211,3 +211,12 @@ export default async function handler(req, res) {
     errors,
   });
 }
+
+// Allow up to 10MB body for large imports
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};

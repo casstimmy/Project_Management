@@ -180,7 +180,16 @@ export default function ImportPage() {
         method: "POST",
         body: JSON.stringify({ entity: entity.key, rows: okRows }),
       });
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        toast.error(`Server error (${res.status}). The payload may be too large or the server is unreachable.`);
+        setImporting(false);
+        return;
+      }
+
       if (!res.ok && !data.created) {
         toast.error(data.error || "Import failed");
         if (data.errors) setResult(data);
@@ -188,8 +197,9 @@ export default function ImportPage() {
         setResult(data);
         toast.success(`Imported ${data.created} of ${data.total} ${entity.label.toLowerCase()}.`);
       }
-    } catch {
-      toast.error("Import failed");
+    } catch (err) {
+      toast.error("Import failed — check your network connection and try again.");
+      console.error("Import error:", err);
     } finally {
       setImporting(false);
     }
