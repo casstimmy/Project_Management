@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Layout from "@/components/MainLayout/Layout";
 import {
   PageHeader, Button, Modal, FormField, Input, Select, Textarea,
@@ -7,7 +7,8 @@ import {
   MapPin, Flame, Zap, Droplets, Wind, ChevronDown, ChevronRight,
   ThermometerSun, Fan, CircuitBoard, Plug, Lightbulb, ShieldCheck,
   PipetteIcon, Waves, Upload, Trash2, FileText, Eye, Plus,
-  Building2, Building, Armchair, Radio,
+  Building2, Building, Armchair, Radio, ZoomIn, ZoomOut, RotateCw,
+  Maximize2, Minimize2, X, Download,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
@@ -136,7 +137,17 @@ export default function MapsPage() {
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState("systems"); // "systems" or "drawings"
+  const [activeTab, setActiveTab] = useState("systems");
+
+  // Image viewer state
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImage, setViewerImage] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const viewerRef = useRef(null);
 
   useEffect(() => {
     fetchDrawings();
@@ -217,6 +228,49 @@ export default function MapsPage() {
 
   const getDrawingsByCategory = (catId) => drawings.filter(d => d.category === catId);
 
+  // Image viewer helpers
+  const openViewer = (drawing) => {
+    setViewerImage(drawing);
+    setZoom(1);
+    setRotation(0);
+    setPosition({ x: 0, y: 0 });
+    setViewerOpen(true);
+  };
+
+  const closeViewer = () => {
+    setViewerOpen(false);
+    setViewerImage(null);
+  };
+
+  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 5));
+  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.25));
+  const handleRotate = () => setRotation((r) => (r + 90) % 360);
+  const handleReset = () => { setZoom(1); setRotation(0); setPosition({ x: 0, y: 0 }); };
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+    if (e.deltaY < 0) handleZoomIn();
+    else handleZoomOut();
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    setDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!dragging) return;
+    setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+
+  const handleMouseUp = () => setDragging(false);
+
+  const isImageFile = (drawing) => {
+    const ext = (drawing.fileName || "").toLowerCase();
+    return /\.(png|jpg|jpeg|gif|webp|svg|bmp)$/i.test(ext);
+  };
+
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
@@ -250,19 +304,55 @@ export default function MapsPage() {
                     <span className="ml-auto text-sm text-gray-400">{catDrawings.length} file{catDrawings.length !== 1 ? "s" : ""}</span>
                   </div>
                   {catDrawings.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                       {catDrawings.map((d) => (
-                        <div key={d._id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <FileText size={18} className="text-gray-400" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-800">{d.title}</p>
-                              <p className="text-xs text-gray-400">{d.fileName} • {new Date(d.uploadedAt).toLocaleDateString()}</p>
+                        <div key={d._id} className="group relative border border-gray-200 rounded-lg overflow-hidden bg-gray-50 hover:shadow-md transition-shadow">
+                          {/* Thumbnail */}
+                          <div className="aspect-[4/3] relative bg-gray-100 overflow-hidden">
+                            {isImageFile(d) ? (
+                              <img
+                                src={d.fileUrl}
+                                alt={d.title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                <FileText size={32} />
+                                <span className="text-xs mt-1 uppercase">{(d.fileName || "").split(".").pop()}</span>
+                              </div>
+                            )}
+                            {/* Overlay actions */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                              <button
+                                onClick={() => isImageFile(d) ? openViewer(d) : window.open(d.fileUrl, "_blank")}
+                                className="p-2 bg-white rounded-full shadow hover:bg-blue-50 transition"
+                                title="View"
+                              >
+                                <Eye size={16} className="text-blue-600" />
+                              </button>
+                              <a
+                                href={d.fileUrl}
+                                download={d.fileName}
+                                className="p-2 bg-white rounded-full shadow hover:bg-green-50 transition"
+                                title="Download"
+                              >
+                                <Download size={16} className="text-green-600" />
+                              </a>
+                              <button
+                                onClick={() => handleDeleteDrawing(d._id)}
+                                className="p-2 bg-white rounded-full shadow hover:bg-red-50 transition"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} className="text-red-500" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-blue-50"><Eye size={14} className="text-blue-500" /></a>
-                            <button onClick={() => handleDeleteDrawing(d._id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                          {/* Info */}
+                          <div className="p-3">
+                            <p className="text-sm font-medium text-gray-800 truncate">{d.title}</p>
+                            <p className="text-xs text-gray-400 truncate mt-0.5">{d.fileName}</p>
+                            <p className="text-xs text-gray-400 mt-1">{new Date(d.uploadedAt).toLocaleDateString()}</p>
                           </div>
                         </div>
                       ))}
@@ -439,6 +529,70 @@ export default function MapsPage() {
             </div>
           </div>
         </Modal>
+
+        {/* Image Viewer Modal */}
+        {viewerOpen && viewerImage && (
+          <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-4 py-3 bg-black/60 backdrop-blur-sm">
+              <div className="text-white min-w-0">
+                <p className="text-sm font-medium truncate">{viewerImage.title}</p>
+                <p className="text-xs text-gray-300 truncate">{viewerImage.fileName}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={handleZoomOut} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition" title="Zoom Out">
+                  <ZoomOut size={18} />
+                </button>
+                <span className="text-xs text-white/70 min-w-[3rem] text-center">{Math.round(zoom * 100)}%</span>
+                <button onClick={handleZoomIn} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition" title="Zoom In">
+                  <ZoomIn size={18} />
+                </button>
+                <div className="w-px h-5 bg-white/20 mx-1" />
+                <button onClick={handleRotate} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition" title="Rotate">
+                  <RotateCw size={18} />
+                </button>
+                <button onClick={handleReset} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition" title="Reset View">
+                  <Maximize2 size={18} />
+                </button>
+                <div className="w-px h-5 bg-white/20 mx-1" />
+                <a href={viewerImage.fileUrl} download={viewerImage.fileName} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition" title="Download">
+                  <Download size={18} />
+                </a>
+                <button onClick={closeViewer} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition ml-2" title="Close">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Image container */}
+            <div
+              ref={viewerRef}
+              className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing select-none"
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              <div className="w-full h-full flex items-center justify-center">
+                <img
+                  src={viewerImage.fileUrl}
+                  alt={viewerImage.title}
+                  draggable={false}
+                  className="max-w-none transition-transform duration-100"
+                  style={{
+                    transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Bottom hint */}
+            <div className="px-4 py-2 bg-black/60 text-center">
+              <p className="text-xs text-gray-400">Scroll to zoom • Drag to pan • Click toolbar buttons for controls</p>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
